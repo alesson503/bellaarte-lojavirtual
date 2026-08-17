@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import type { CartItem } from '../App';
+import { useEffect, useState } from 'react';
+import type { CartItem } from '../types';
 import { fmt } from '../data';
+import { useAuth } from '../auth/AuthContext';
+import { createOrder } from '../services/ordersService';
 
 export default function CheckoutModal({
   open, cart, onClose,
@@ -9,15 +11,21 @@ export default function CheckoutModal({
   cart: CartItem[];
   onClose: () => void;
 }) {
+  const { user } = useAuth();
   const [nome, setNome] = useState('');
   const [phone, setPhone] = useState('');
   const [delivery, setDelivery] = useState('Retirar na Bella Arte');
   const [status, setStatus] = useState<'idle' | 'erro' | 'ok'>('idle');
 
+  useEffect(() => {
+    if (open && user) setNome(prev => prev || user.nome);
+  }, [open, user]);
+
   const total = cart.reduce((s, x) => s + x.preco, 0);
 
   function submit() {
     if (!nome.trim() || !phone.trim()) { setStatus('erro'); return; }
+    createOrder({ clienteId: user?.id ?? null, nome: nome.trim(), telefone: phone.trim(), entrega: delivery, itens: cart, total });
     setStatus('ok');
   }
 
@@ -49,7 +57,7 @@ export default function CheckoutModal({
         {status === 'erro' && <p style={{ color: 'var(--blush-deep)', fontSize: 12.5, marginTop: 10 }}>Preenche pelo menos nome e WhatsApp pra continuar.</p>}
         {status === 'ok' && (
           <div className="checkout-ok">
-            ✓ Pedido de demonstração preparado pra <b>{nome}</b> ({delivery}). Quando a loja for integrada de verdade, isso vira um pedido real no seu sistema (igual um da tela de Vendas).
+            ✓ Pedido de teste registrado pra <b>{nome}</b> ({delivery}) — já aparece no painel /admin. Quando a loja for integrada de verdade, isso vira um pedido real no seu sistema (igual um da tela de Vendas).
           </div>
         )}
       </div>

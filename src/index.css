@@ -1,31 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #1E1B4B; --ink-soft: #423D78; --graphite: #6B6478; --graphite-faint: #9A93B5;
-  --paper: #FFFCF7; --card: #FFFFFF; --line: #ECE4F5;
-  --violet: #7C3AED; --violet-deep: #4338CA; --violet-ink: #FFFFFF; --violet-soft: #F1EBFF;
-  --blush: #FCE7F3; --blush-line: #FBCFE8; --blush-deep: #DB2777;
+  /* Paleta derivada do rosa da logo (#EB90B7) — "violet" e "blush" continuam com
+     esses nomes de variável (usados em todo o CSS) mas agora vivem na família rosa. */
+  --ink: #2B1521; --ink-soft: #5E2A44; --graphite: #7A6069; --graphite-faint: #A6919C;
+  --paper: #FFFCF7; --card: #FFFFFF; --line: #F5E2EA;
+  --violet: #A63368; --violet-deep: #7F2350; --violet-ink: #FFFFFF; --violet-soft: #FCEAF2;
+  --blush: #FCE4EF; --blush-line: #F7C9DD; --blush-deep: #D6427F;
   --amber: #B45309; --amber-bg: #FEF3C7;
-  --shadow: 0 1px 2px rgba(30,27,75,0.05), 0 8px 24px -12px rgba(30,27,75,0.18);
-  --shadow-lift: 0 20px 44px -20px rgba(30,27,75,0.32);
+  --shadow: 0 1px 2px rgba(43,21,33,0.05), 0 8px 24px -12px rgba(43,21,33,0.18);
+  --shadow-lift: 0 20px 44px -20px rgba(43,21,33,0.32);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #F3E8FF; --ink-soft: #D7CCF2; --graphite: #B9AEE8; --graphite-faint: #8B80C4;
-    --paper: #130F28; --card: #1E1B4B; --line: #372F72;
-    --violet: #A78BFA; --violet-deep: #C4B5FD; --violet-ink: #1E1B4B; --violet-soft: #241D52;
-    --blush: #2A2160; --blush-line: #453A8A; --blush-deep: #F0ABFC;
+    --ink: #FBE9F1; --ink-soft: #EAC3D6; --graphite: #C9A3B5; --graphite-faint: #96768A;
+    --paper: #201017; --card: #2E1420; --line: #45202F;
+    --violet: #F0729F; --violet-deep: #F5A0C0; --violet-ink: #2E1420; --violet-soft: #3D1B2C;
+    --blush: #3D1B2C; --blush-line: #5C2A40; --blush-deep: #DE5A8C;
     --amber: #FCD34D; --amber-bg: #3A2E12;
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
     --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
   }
 }
 :root[data-theme="dark"] {
-  --ink: #F3E8FF; --ink-soft: #D7CCF2; --graphite: #B9AEE8; --graphite-faint: #8B80C4;
-  --paper: #130F28; --card: #1E1B4B; --line: #372F72;
-  --violet: #A78BFA; --violet-deep: #C4B5FD; --violet-ink: #1E1B4B; --violet-soft: #241D52;
-  --blush: #2A2160; --blush-line: #453A8A; --blush-deep: #F0ABFC;
+  --ink: #FBE9F1; --ink-soft: #EAC3D6; --graphite: #C9A3B5; --graphite-faint: #96768A;
+  --paper: #201017; --card: #2E1420; --line: #45202F;
+  --violet: #F0729F; --violet-deep: #F5A0C0; --violet-ink: #2E1420; --violet-soft: #3D1B2C;
+  --blush: #3D1B2C; --blush-line: #5C2A40; --blush-deep: #DE5A8C;
   --amber: #FCD34D; --amber-bg: #3A2E12;
   --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
   --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
@@ -66,8 +68,7 @@ input[type="range"]::-webkit-slider-thumb {
 header.site { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); background: none; border: none; cursor: pointer; padding: 0; }
-.brand .mark { width: 38px; height: 38px; border-radius: 11px; background: var(--violet); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transform: rotate(-6deg); box-shadow: var(--shadow); }
-.brand .mark svg { width: 20px; height: 20px; }
+.brand-logo { object-fit: contain; flex-shrink: 0; }
 .brand .word { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
 .brand .word span { color: var(--violet); }
 nav.links { display: flex; align-items: center; gap: 24px; }
@@ -112,29 +113,13 @@ nav.links a.active::after { content: ''; position: absolute; left: 0; right: 0; 
 .hero-trust div b { display: block; font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .hero-trust div span { font-size: 12px; color: var(--graphite-faint); }
 
-/* Composição "flat lay": cartão + adesivo + tag, em camadas, sem fotos reais */
+/* Foto real do produto, com tag e chips flutuando por cima */
 .peel-stage { position: relative; display: flex; align-items: center; justify-content: center; padding: 30px; min-height: 380px; }
-.stage-card {
-  position: absolute; width: 230px; height: 148px; background: var(--card); border-radius: 16px;
-  box-shadow: var(--shadow-lift); transform: rotate(-9deg) translate(-38px, 6px); z-index: 1;
-  padding: 20px; display: flex; flex-direction: column; justify-content: space-between;
-}
-.stage-card .mono-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--violet); }
-.stage-card b { font-size: 14.5px; font-weight: 800; color: var(--ink); }
-.stage-card span { font-size: 10px; color: var(--graphite-faint); letter-spacing: 0.05em; text-transform: uppercase; }
-.sticker-hero {
-  position: relative; width: 236px; height: 236px; border-radius: 50%;
-  background: var(--violet); box-shadow: var(--shadow-lift); z-index: 2;
-  display: flex; align-items: center; justify-content: center; transform: rotate(6deg) translate(36px, 24px);
-}
-.sticker-hero .ring { position: absolute; inset: 13px; border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--violet-ink) 40%, transparent); }
-.sticker-hero .stamp { text-align: center; color: var(--violet-ink); }
-.sticker-hero .stamp .word1 { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; opacity: 0.85; }
-.sticker-hero .stamp .word2 { font-size: 25px; font-weight: 800; margin-top: 4px; }
-.sticker-hero .stamp .word3 { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-top: 6px; }
+.hero-photo { width: 100%; max-width: 440px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-lift); transform: rotate(-1.5deg); }
+.hero-photo img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
 .stage-tag {
   position: absolute; width: 74px; height: 74px; border-radius: 20px; background: var(--blush-deep);
-  box-shadow: var(--shadow-lift); z-index: 3; transform: rotate(-14deg) translate(84px, -104px);
+  box-shadow: var(--shadow-lift); z-index: 3; transform: rotate(-14deg) translate(158px, -132px);
   display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px;
 }
 .float-chip {
@@ -142,8 +127,8 @@ nav.links a.active::after { content: ''; position: absolute; left: 0; right: 0; 
   padding: 9px 13px; box-shadow: var(--shadow); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; z-index: 4;
 }
 .float-chip.c1 { top: 4px; left: -6px; transform: rotate(-8deg); }
-.float-chip.c2 { bottom: 10px; right: -18px; transform: rotate(6deg); }
-@media (max-width: 900px) { .peel-stage { padding: 46px 20px; min-height: 320px; } .stage-card { width: 190px; height: 122px; } .sticker-hero { width: 190px; height: 190px; } }
+.float-chip.c2 { bottom: 10px; right: -6px; transform: rotate(6deg); }
+@media (max-width: 900px) { .peel-stage { padding: 46px 20px; min-height: 320px; } .hero-photo { max-width: 340px; } .stage-tag { transform: rotate(-14deg) translate(118px, -100px); } }
 
 /* ── section scaffolding ── */
 section { padding: 68px 0; }
@@ -324,6 +309,15 @@ footer.site { padding: 40px 0 60px; border-top: 1px solid var(--line); margin-to
 .upload-drop small { color: var(--graphite-faint); font-size: 11.5px; }
 .upload-status { font-size: 12.5px; color: var(--violet-deep); font-weight: 600; margin-top: 12px; min-height: 1em; }
 .checkout-ok { background: var(--blush); border: 1px solid var(--blush-line); border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--ink); margin-top: 14px; }
+
+.whats-float {
+  position: fixed; right: 24px; bottom: 24px; width: 58px; height: 58px; border-radius: 50%;
+  background: var(--card); border: 1.5px solid var(--line); color: var(--violet);
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-lift);
+  z-index: 55; transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.whats-float:hover { transform: translateY(-3px) scale(1.05); background: var(--violet); color: var(--violet-ink); }
+@media (max-width: 640px) { .whats-float { right: 16px; bottom: 16px; width: 52px; height: 52px; } }
 
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(8px);
