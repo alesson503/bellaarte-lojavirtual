@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('../db');
-const { signToken, authMiddleware } = require('../middleware/auth');
+const { signToken, authMiddleware, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -62,6 +62,14 @@ router.get('/me', authMiddleware, async (req, res) => {
   const { rows } = await pool.query('SELECT id, nome, email, role FROM clientes WHERE id = $1', [req.user.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Conta não encontrada.' });
   res.json({ user: publicUser(rows[0]) });
+});
+
+// Lista de clientes cadastrados — só admin, usado no dashboard.
+router.get('/clientes', authMiddleware, adminOnly, async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, nome, email, criado_em FROM clientes WHERE role = 'cliente' ORDER BY criado_em DESC`
+  );
+  res.json({ clientes: rows });
 });
 
 module.exports = router;

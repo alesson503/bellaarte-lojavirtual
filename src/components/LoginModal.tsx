@@ -14,6 +14,7 @@ export default function LoginModal({
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   function limpar() {
     setNome(''); setEmail(''); setSenha(''); setErro('');
@@ -25,15 +26,18 @@ export default function LoginModal({
     onClose();
   }
 
-  function submit() {
+  async function submit() {
     setErro('');
+    setEnviando(true);
     try {
-      const user = modo === 'entrar' ? login(email, senha) : register(nome, email, senha);
+      const user = modo === 'entrar' ? await login(email, senha) : await register(nome, email, senha);
       const nomeParaSaudar = user.nome;
       limpar();
       onSuccess(nomeParaSaudar);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Algo deu errado.');
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -59,8 +63,8 @@ export default function LoginModal({
 
         {erro && <p style={{ color: 'var(--blush-deep)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>{erro}</p>}
 
-        <button className="btn-primary" style={{ width: '100%' }} onClick={submit}>
-          {modo === 'entrar' ? 'Entrar' : 'Criar conta'}
+        <button className="btn-primary" style={{ width: '100%' }} onClick={submit} disabled={enviando}>
+          {enviando ? 'Só um instante...' : modo === 'entrar' ? 'Entrar' : 'Criar conta'}
         </button>
       </div>
     </div>

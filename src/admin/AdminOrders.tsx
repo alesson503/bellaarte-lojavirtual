@@ -1,14 +1,24 @@
-import { listOrders } from '../services/ordersService';
+import { useEffect, useState } from 'react';
+import { listOrders, type Order } from '../services/ordersService';
 import { fmt } from '../data';
 
 export default function AdminOrders() {
-  const orders = listOrders();
+  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    listOrders().then(setOrders).catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar pedidos.'));
+  }, []);
 
   return (
     <div className="adm-panel">
       <h2>Pedidos</h2>
-      <p className="sub">Todos os pedidos de teste feitos na prévia da loja.</p>
-      {orders.length === 0 ? (
+      <p className="sub">Todos os pedidos feitos na loja.</p>
+      {erro ? (
+        <div className="adm-empty">{erro}</div>
+      ) : !orders ? (
+        <div className="adm-empty">Carregando…</div>
+      ) : orders.length === 0 ? (
         <div className="adm-empty">Nenhum pedido ainda — finalize uma compra na loja pra ver aqui.</div>
       ) : (
         <table className="adm-table">
@@ -22,7 +32,7 @@ export default function AdminOrders() {
                 <td>{o.itens.map(i => i.nome).join(', ')}</td>
                 <td>{o.entrega}</td>
                 <td>{fmt(o.total)}</td>
-                <td>{new Date(o.criadoEm).toLocaleString('pt-BR')}</td>
+                <td>{new Date(o.criado_em).toLocaleString('pt-BR')}</td>
               </tr>
             ))}
           </tbody>

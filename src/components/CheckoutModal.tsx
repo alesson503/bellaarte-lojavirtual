@@ -16,6 +16,8 @@ export default function CheckoutModal({
   const [phone, setPhone] = useState('');
   const [delivery, setDelivery] = useState('Retirar na Bella Arte');
   const [status, setStatus] = useState<'idle' | 'erro' | 'ok'>('idle');
+  const [erroMsg, setErroMsg] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (open && user) setNome(prev => prev || user.nome);
@@ -23,10 +25,18 @@ export default function CheckoutModal({
 
   const total = cart.reduce((s, x) => s + x.preco, 0);
 
-  function submit() {
-    if (!nome.trim() || !phone.trim()) { setStatus('erro'); return; }
-    createOrder({ clienteId: user?.id ?? null, nome: nome.trim(), telefone: phone.trim(), entrega: delivery, itens: cart, total });
-    setStatus('ok');
+  async function submit() {
+    if (!nome.trim() || !phone.trim()) { setStatus('erro'); setErroMsg('Preenche pelo menos nome e WhatsApp pra continuar.'); return; }
+    setEnviando(true);
+    try {
+      await createOrder({ clienteId: user?.id ?? null, nome: nome.trim(), telefone: phone.trim(), entrega: delivery, itens: cart, total });
+      setStatus('ok');
+    } catch (e) {
+      setStatus('erro');
+      setErroMsg(e instanceof Error ? e.message : 'Não foi possível enviar o pedido. Tente de novo.');
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -34,7 +44,7 @@ export default function CheckoutModal({
       <div className="modal-box">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2 className="serif">Finalizar pedido</h2>
-        <p className="modal-sub">Prévia — simula os dados que seriam enviados pro sistema da Bella Arte.</p>
+        <p className="modal-sub">Confirme seus dados pra gente preparar seu pedido.</p>
         <div className="field-group"><label>Nome</label><input value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome" /></div>
         <div className="field-group"><label>WhatsApp</label><input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 90000-0000" /></div>
         <div className="field-group">
@@ -53,11 +63,13 @@ export default function CheckoutModal({
             <span>Total</span><span>{fmt(total)}</span>
           </div>
         </div>
-        <button className="btn-primary" style={{ width: '100%' }} onClick={submit}>Enviar pedido para a Bella Arte</button>
-        {status === 'erro' && <p style={{ color: 'var(--blush-deep)', fontSize: 12.5, marginTop: 10 }}>Preenche pelo menos nome e WhatsApp pra continuar.</p>}
+        <button className="btn-primary" style={{ width: '100%' }} onClick={submit} disabled={enviando}>
+          {enviando ? 'Enviando...' : 'Enviar pedido para a Bella Arte'}
+        </button>
+        {status === 'erro' && <p style={{ color: 'var(--blush-deep)', fontSize: 12.5, marginTop: 10 }}>{erroMsg}</p>}
         {status === 'ok' && (
           <div className="checkout-ok">
-            ✓ Pedido de teste registrado pra <b>{nome}</b> ({delivery}) — já aparece no painel /admin. Quando a loja for integrada de verdade, isso vira um pedido real no seu sistema (igual um da tela de Vendas).
+            ✓ Pedido registrado pra <b>{nome}</b> ({delivery}) — já aparece no painel /admin. A gente entra em contato pelo WhatsApp pra confirmar os detalhes.
           </div>
         )}
       </div>

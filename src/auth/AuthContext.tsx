@@ -1,27 +1,36 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import * as authService from './authService';
 import type { User } from './authService';
 
 interface AuthContextValue {
   user: User | null;
-  login: (email: string, senha: string) => User;
-  register: (nome: string, email: string, senha: string) => User;
+  loading: boolean;
+  login: (email: string, senha: string) => Promise<User>;
+  register: (nome: string, email: string, senha: string) => Promise<User>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => authService.getSession());
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  function login(email: string, senha: string) {
-    const u = authService.login(email, senha);
+  useEffect(() => {
+    authService.fetchSession().then(u => {
+      setUser(u);
+      setLoading(false);
+    });
+  }, []);
+
+  async function login(email: string, senha: string) {
+    const u = await authService.login(email, senha);
     setUser(u);
     return u;
   }
 
-  function register(nome: string, email: string, senha: string) {
-    const u = authService.register(nome, email, senha);
+  async function register(nome: string, email: string, senha: string) {
+    const u = await authService.register(nome, email, senha);
     setUser(u);
     return u;
   }
@@ -32,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

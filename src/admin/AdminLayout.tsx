@@ -11,8 +11,12 @@ const NAV = [
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Enquanto confirma a sessão com o servidor, não decide nada ainda —
+  // senão redireciona pro login por engano logo no primeiro instante.
+  if (loading) return <div className="adm-login-wrap">Carregando…</div>;
 
   if (!user || user.role !== 'admin') {
     return <Navigate to="/admin/login" replace />;

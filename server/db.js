@@ -1,7 +1,11 @@
 // Conexão com o Postgres do Railway + migração automática (cria as tabelas
 // se ainda não existirem, toda vez que o servidor sobe — idempotente, não
 // apaga nem sobrescreve dado nenhum já existente).
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// NUMERIC volta como string por padrão no node-pg (evita perder precisão) —
+// aqui a gente prefere número de verdade pro front-end não ter que converter.
+types.setTypeParser(1700, val => (val === null ? null : parseFloat(val)));
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL não definida. Configure a variável de ambiente.');

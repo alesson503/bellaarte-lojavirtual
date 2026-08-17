@@ -1,43 +1,45 @@
-// Pedidos locais (mock) — mesma ideia do authService: guarda no localStorage
-// pra você testar o painel admin agora. Quando integrar com o sistema real,
-// troque o corpo destas funções por chamadas à API.
-
+// Pedidos de verdade — fala com a API da loja (Postgres no Railway).
+import { API_URL } from '../config';
+import { authHeader } from '../auth/authService';
 import type { CartItem } from '../types';
 
 export interface Order {
   id: string;
+  cliente_id: string | null;
+  nome: string;
+  telefone: string;
+  entrega: string;
+  itens: CartItem[];
+  total: number;
+  status: string;
+  criado_em: string;
+}
+
+async function parseOrThrow(res: Response) {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente de novo.');
+  return data;
+}
+
+export async function createOrder(data: {
   clienteId: string | null;
   nome: string;
   telefone: string;
   entrega: string;
   itens: CartItem[];
   total: number;
-  criadoEm: string;
+}): Promise<Order> {
+  const res = await fetch(`${API_URL}/api/pedidos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await parseOrThrow(res);
+  return json.pedido;
 }
 
-const ORDERS_KEY = 'bellaarte_orders';
-
-function readOrders(): Order[] {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    return raw ? JSON.parse(raw) as Order[] : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeOrders(orders: Order[]) {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-}
-
-export function createOrder(data: Omit<Order, 'id' | 'criadoEm'>): Order {
-  const order: Order = { ...data, id: crypto.randomUUID(), criadoEm: new Date().toISOString() };
-  const orders = readOrders();
-  orders.unshift(order);
-  writeOrders(orders);
-  return order;
-}
-
-export function listOrders(): Order[] {
-  return readOrders();
+export async function listOrders(): Promise<Order[]> {
+  const res = await fetch(`${API_URL}/api/pedidos`, { headers: authHeader() });
+  const json = await parseOrThrow(res);
+  return json.pedidos;
 }

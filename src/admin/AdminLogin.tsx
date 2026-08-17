@@ -11,10 +11,10 @@ export default function AdminLogin() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
 
-  function submit() {
+  async function submit() {
     setErro('');
     try {
-      const user = login(email, senha);
+      const user = await login(email, senha);
       if (user.role !== 'admin') {
         setErro('Essa conta não tem acesso ao painel admin.');
         return;
@@ -41,7 +41,7 @@ export default function AdminLogin() {
         <button className="btn-primary" style={{ width: '100%' }} onClick={submit}>Entrar no painel</button>
 
         <div className="adm-hint">
-          Login local de teste — use <b>admin@bellaarte.com</b> / <b>admin123</b> até integrar com o seu sistema.
+          Use <b>admin@bellaarte.com</b> / <b>admin123</b> pra entrar com a conta de admin de teste.
         </div>
 
         <Link className="adm-back" to="/">← Voltar para a loja</Link>
