@@ -72,4 +72,12 @@ router.get('/clientes', authMiddleware, adminOnly, async (req, res) => {
   res.json({ clientes: rows });
 });
 
+// Só apaga conta com role='cliente' — nunca deixa apagar uma conta admin por
+// essa rota, mesmo que o id seja de admin.
+router.delete('/clientes/:id', authMiddleware, adminOnly, async (req, res) => {
+  const { rowCount } = await pool.query(`DELETE FROM clientes WHERE id = $1 AND role = 'cliente'`, [req.params.id]);
+  if (!rowCount) return res.status(404).json({ error: 'Cliente não encontrado.' });
+  res.status(204).end();
+});
+
 module.exports = router;

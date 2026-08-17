@@ -43,3 +43,11 @@ export async function listOrders(): Promise<Order[]> {
   const json = await parseOrThrow(res);
   return json.pedidos;
 }
+
+export async function deleteOrder(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/pedidos/${id}`, { method: 'DELETE', headers: authHeader() });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Não foi possível apagar o pedido.');
+  }
+}
