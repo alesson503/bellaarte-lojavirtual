@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { listOrders, deleteOrder, type Order } from '../services/ordersService';
+import { listOrders, deleteOrder, sendToErp, type Order } from '../services/ordersService';
 import { fmt } from '../data';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [erro, setErro] = useState('');
   const [apagando, setApagando] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<string | null>(null);
 
   useEffect(() => {
     carregar();
@@ -28,10 +29,23 @@ export default function AdminOrders() {
     }
   }
 
+  async function enviarParaErp(id: string, nome: string) {
+    if (!confirm(`Confirmar pedido de ${nome} e lançar como venda no ERP?`)) return;
+    setEnviando(id);
+    try {
+      const atualizado = await sendToErp(id);
+      setOrders(prev => prev?.map(o => (o.id === id ? atualizado : o)) ?? null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível enviar pro ERP.');
+    } finally {
+      setEnviando(null);
+    }
+  }
+
   return (
     <div className="adm-panel">
       <h2>Pedidos</h2>
-      <p className="sub">Todos os pedidos feitos na loja.</p>
+      <p className="sub">Todos os pedidos feitos na loja. Confirme os que forem de verdade pra lançar como venda no ERP.</p>
       {erro ? (
         <div className="adm-empty">{erro}</div>
       ) : !orders ? (
@@ -41,7 +55,7 @@ export default function AdminOrders() {
       ) : (
         <table className="adm-table">
           <thead>
-            <tr><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Total</th><th>Data</th><th></th></tr>
+            <tr><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Total</th><th>Data</th><th>ERP</th><th></th></tr>
           </thead>
           <tbody>
             {orders.map(o => (
@@ -51,6 +65,16 @@ export default function AdminOrders() {
                 <td>{o.entrega}</td>
                 <td>{fmt(o.total)}</td>
                 <td>{new Date(o.criado_em).toLocaleString('pt-BR')}</td>
+                <td>
+                  {o.enviado_erp ? (
+                    <span style={{ color: 'var(--violet-deep)', fontWeight: 700, fontSize: 12.5 }}>✓ {o.erp_numero}</span>
+                  ) : (
+                    <button className="adm-link-btn" style={{ color: 'var(--violet-deep)' }}
+                      disabled={enviando === o.id} onClick={() => enviarParaErp(o.id, o.nome)}>
+                      {enviando === o.id ? 'Enviando…' : 'Enviar pro ERP'}
+                    </button>
+                  )}
+                </td>
                 <td>
                   <button className="adm-link-btn" style={{ color: 'var(--blush-deep)' }}
                     disabled={apagando === o.id} onClick={() => apagar(o.id, o.nome)}>

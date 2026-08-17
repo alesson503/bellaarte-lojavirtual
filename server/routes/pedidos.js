@@ -55,4 +55,42 @@ router.delete('/:id', authMiddleware, adminOnly, async (req, res) => {
   res.status(204).end();
 });
 
+// Manda o pedido pro ERP como uma venda de verdade — só quando o admin
+// confirma manualmente (não é automático), pra revisar antes.
+router.post('/:id/enviar-erp', authMiddleware, adminOnly, async (req, res) => {
+  if (!process.env.ERP_API_URL || !process.env.ERP_API_SECRET) {
+    return res.status(503).json({ error: 'Integração com o ERP ainda não foi configurada.' });
+  }
+
+  const { rows } = await pool.query('SELECT * FROM pedidos WHERE id = $1', [req.params.id]);
+  const pedido = rows[0];
+  if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado.' });
+  if (pedido.enviado_erp) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP.' });
+
+  try {
+    const erpRes = await fetch(`${process.env.ERP_API_URL}/api/pedidos-site`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-loja-secret': process.env.ERP_API_SECRET },
+      body: JSON.stringify({
+        nome: pedido.nome,
+        telefone: pedido.telefone,
+        itens: pedido.itens,
+        total: pedido.total,
+        entrega: pedido.entrega,
+      }),
+    });
+    const erpData = await erpRes.json().catch(() => ({}));
+    if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou o pedido.');
+
+    const { rows: updated } = await pool.query(
+      'UPDATE pedidos SET enviado_erp = true, erp_numero = $2 WHERE id = $1 RETURNING *',
+      [pedido.id, erpData.numero || null]
+    );
+    res.json({ pedido: updated[0] });
+  } catch (e) {
+    console.error('Erro ao enviar pedido pro ERP:', e);
+    res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível falar com o ERP agora.' });
+  }
+});
+
 module.exports = router;

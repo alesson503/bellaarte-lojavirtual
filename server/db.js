@@ -50,8 +50,15 @@ async function migrate() {
       total       NUMERIC(10,2) NOT NULL DEFAULT 0,
       status      TEXT NOT NULL DEFAULT 'novo',
       origem      TEXT NOT NULL DEFAULT 'site',
-      criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+      criado_em   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      enviado_erp BOOLEAN NOT NULL DEFAULT false,
+      erp_numero  TEXT
     );
+
+    -- A tabela pedidos já existia antes dessas duas colunas — adiciona se
+    -- ainda não existirem, sem afetar nenhuma linha já salva.
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS enviado_erp BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS erp_numero TEXT;
   `);
 }
 

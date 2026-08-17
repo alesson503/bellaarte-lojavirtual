@@ -13,6 +13,8 @@ export interface Order {
   total: number;
   status: string;
   criado_em: string;
+  enviado_erp: boolean;
+  erp_numero: string | null;
 }
 
 async function parseOrThrow(res: Response) {
@@ -50,4 +52,10 @@ export async function deleteOrder(id: string): Promise<void> {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Não foi possível apagar o pedido.');
   }
+}
+
+export async function sendToErp(id: string): Promise<Order> {
+  const res = await fetch(`${API_URL}/api/pedidos/${id}/enviar-erp`, { method: 'POST', headers: authHeader() });
+  const json = await parseOrThrow(res);
+  return json.pedido;
 }
