@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, origem, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true ORDER BY categoria, nome'
     );
     const { rows: promoRows } = await pool.query(
       `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes

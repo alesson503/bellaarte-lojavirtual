@@ -36,6 +36,7 @@ export interface LojaProduto {
   desconto_percentual: number;
   unidade: string | null;
   ativo: boolean;
+  origem: string;
   imagem_url: string | null;
   descricao: string | null;
   cores: string[];
@@ -49,26 +50,22 @@ export async function listLojaProducts(): Promise<LojaProduto[]> {
   return data.produtos;
 }
 
-export async function atualizarDescontoProduto(id: string, desconto: number | null): Promise<void> {
+// Salva tudo que é "só da loja" num produto de uma vez só — usado pelo
+// painel único de edição (foto fica de fora, tem endpoint próprio por causa
+// do upload de arquivo).
+export async function atualizarProdutoLoja(id: string, dados: {
+  desconto_percentual: number | null;
+  descricao: string;
+  cores: string[];
+  especificacoes: { chave: string; valor: string }[];
+}): Promise<void> {
   const res = await fetch(`${API_URL}/api/produtos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify({ desconto_percentual: desconto ?? '' }),
+    body: JSON.stringify({ ...dados, desconto_percentual: dados.desconto_percentual ?? '' }),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Erro ao salvar desconto.');
-}
-
-export async function atualizarDetalhesProduto(
-  id: string, descricao: string, cores: string[], especificacoes: { chave: string; valor: string }[],
-): Promise<void> {
-  const res = await fetch(`${API_URL}/api/produtos/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify({ descricao, cores, especificacoes }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Erro ao salvar os detalhes.');
+  if (!res.ok) throw new Error(data.error || 'Erro ao salvar o produto.');
 }
 
 export async function uploadImagemProduto(id: string, imagemDataUrl: string): Promise<void> {
