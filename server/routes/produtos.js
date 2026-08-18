@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { syncProdutosFromErp } = require('../erpSync');
 
 const router = express.Router();
 
@@ -43,6 +44,18 @@ router.get('/erp', async (req, res) => {
   } catch (e) {
     console.error('Erro ao buscar produtos do ERP:', e);
     res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível falar com o ERP agora.' });
+  }
+});
+
+// Dispara a sincronização na hora (a mesma que roda sozinha a cada 30min).
+router.post('/sincronizar', async (req, res) => {
+  try {
+    const resultado = await syncProdutosFromErp();
+    if (!resultado.ok) return res.status(503).json({ error: resultado.error });
+    res.json(resultado);
+  } catch (e) {
+    console.error('Erro ao sincronizar produtos:', e);
+    res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível sincronizar agora.' });
   }
 });
 

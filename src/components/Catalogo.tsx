@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { CATALOGO, CATEGORIAS } from '../data';
+import { useEffect, useMemo, useState } from 'react';
+import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria } from '../data';
+import { listLojaProducts } from '../services/productsService';
 import { SearchIcon } from '../icons';
 import ProductCard from './ProductCard';
 
@@ -14,32 +15,44 @@ export default function Catalogo({
 }) {
   const [filtro, setFiltro] = useState(filtroInicial);
   const [busca, setBusca] = useState('');
+  // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
+  // por qualquer motivo, cai pro catálogo fixo em vez de mostrar vitrine vazia.
+  const [simples, setSimples] = useState(SIMPLES);
+
+  useEffect(() => {
+    listLojaProducts()
+      .then(produtos => {
+        if (produtos.length === 0) return; // ERP ainda não sincronizou — mantém o fallback
+        setSimples(produtos.map(p => ({
+          tipo: 'simples' as const,
+          nome: p.nome,
+          categoria: p.categoria as Categoria,
+          preco: p.preco,
+          unidade: p.unidade ?? undefined,
+        })));
+      })
+      .catch(() => { /* mantém o catálogo fixo (fallback) */ });
+  }, []);
+
+  const catalogo: Produto[] = useMemo(() => [...LINKS, ...MULTI, ...MEDIDA, ...simples], [simples]);
+  const categorias = useMemo(() => ['Todos', ...Array.from(new Set(catalogo.map(p => p.categoria))).sort()], [catalogo]);
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return CATALOGO.filter(p => {
+    return catalogo.filter(p => {
       const okCat = filtro === 'Todos' || p.categoria === filtro;
       const okBusca = !termo || p.nome.toLowerCase().includes(termo);
       return okCat && okBusca;
     });
-  }, [filtro, busca]);
+  }, [catalogo, filtro, busca]);
 
   return (
     <section id="catalogo" className="band">
       <div className="shell">
         <div className="section-head reveal in">
-          <div className="kicker">Prévia com dados reais</div>
+          <div className="kicker">Catálogo</div>
           <h2 className="serif">Catálogo completo</h2>
-          <p>Todos os 60 produtos já cadastrados no seu sistema, agrupados por variação (tamanho, quantidade, acabamento) — escolhe a opção e o preço muda na hora.</p>
-        </div>
-
-        <div className="insight reveal in">
-          <span>💡</span>
-          <span>
-            <b>Reparei uma coisa:</b> vários produtos (a maioria dos Panfletos, o Banner/Lona avulso e 2 tipos de Adesivo) estão sem categoria
-            definida no sistema — vim marcados como "—" na tela de Produtos. Não atrapalha essa prévia porque eu agrupei manualmente, mas vale
-            preencher a categoria de cada um lá no sistema real pra quando a loja filtrar por categoria, funcionar certinho sozinha.
-          </span>
+          <p>Produtos com preço direto do nosso sistema — escolhe a opção e o preço muda na hora.</p>
         </div>
 
         <div className="toolbar reveal in">
@@ -48,8 +61,8 @@ export default function Catalogo({
             <input type="text" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
           </div>
           <div className="pills">
-            {CATEGORIAS.map(cat => {
-              const count = cat === 'Todos' ? CATALOGO.length : CATALOGO.filter(p => p.categoria === cat).length;
+            {categorias.map(cat => {
+              const count = cat === 'Todos' ? catalogo.length : catalogo.filter(p => p.categoria === cat).length;
               return (
                 <button key={cat} className={`pill ${filtro === cat ? 'on' : ''}`} onClick={() => setFiltro(cat)}>
                   {cat} <span className="n">{count}</span>

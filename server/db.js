@@ -27,9 +27,14 @@ async function migrate() {
       unidade       TEXT,
       ativo         BOOLEAN NOT NULL DEFAULT true,
       origem        TEXT NOT NULL DEFAULT 'manual',
+      erp_id        TEXT UNIQUE,
       criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+
+    -- A tabela produtos já existia antes dessa coluna — adiciona se ainda
+    -- não existir, sem afetar nenhum produto já cadastrado manualmente.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_id TEXT UNIQUE;
 
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

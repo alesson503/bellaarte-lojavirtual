@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { migrate, pool } = require('./db');
+const { syncProdutosFromErp } = require('./erpSync');
 
 // Sem fallback fraco — se faltar, o servidor nem sobe (lição da auditoria do ERP).
 if (!process.env.JWT_SECRET) {
@@ -50,10 +51,21 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 3001;
+const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
 
 migrate()
   .then(() => {
     app.listen(PORT, () => console.log(`Bella Arte loja — servidor no ar na porta ${PORT}`));
+
+    // Sincroniza produtos do ERP ao subir e depois a cada 30min — não trava
+    // o servidor se o ERP estiver fora do ar, só loga e tenta de novo depois.
+    const rodarSync = () => {
+      syncProdutosFromErp()
+        .then(r => console.log('Sync de produtos do ERP:', r))
+        .catch(err => console.error('Falha na sincronização de produtos do ERP:', err.message));
+    };
+    rodarSync();
+    setInterval(rodarSync, SYNC_INTERVAL_MS);
   })
   .catch(err => {
     console.error('Falha ao migrar o banco de dados:', err);
