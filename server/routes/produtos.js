@@ -26,6 +26,26 @@ router.get('/todos', async (req, res) => {
   res.json({ produtos: rows });
 });
 
+// Busca os produtos direto do ERP (prévia pro admin conferir — ainda não
+// alimenta a vitrine da loja, só essa tela).
+router.get('/erp', async (req, res) => {
+  if (!process.env.ERP_API_URL || !process.env.ERP_API_SECRET) {
+    return res.status(503).json({ error: 'Integração com o ERP ainda não foi configurada.' });
+  }
+  try {
+    const erpRes = await fetch(`${process.env.ERP_API_URL}/api/produtos-site`, {
+      headers: { 'x-loja-secret': process.env.ERP_API_SECRET },
+    });
+    const erpData = await erpRes.json().catch(() => ({}));
+    if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou o pedido.');
+    const produtos = (erpData.produtos || []).map(p => ({ ...p, preco: Number(p.preco) }));
+    res.json({ produtos });
+  } catch (e) {
+    console.error('Erro ao buscar produtos do ERP:', e);
+    res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível falar com o ERP agora.' });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const { nome, categoria, preco, unidade } = req.body || {};
