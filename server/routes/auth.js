@@ -64,6 +64,29 @@ router.get('/me', authMiddleware, async (req, res) => {
   res.json({ user: publicUser(rows[0]) });
 });
 
+// Troca a própria senha (qualquer conta logada, cliente ou admin) — pede a
+// senha atual pra confirmar que é o dono mesmo da conta.
+router.put('/senha', authMiddleware, loginLimiter, async (req, res) => {
+  try {
+    const { senhaAtual, senhaNova } = req.body || {};
+    if (!senhaAtual || !senhaNova) return res.status(400).json({ error: 'Preencha a senha atual e a nova senha.' });
+    if (String(senhaNova).length < 6) return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+
+    const { rows } = await pool.query('SELECT senha_hash FROM clientes WHERE id = $1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Conta não encontrada.' });
+
+    const ok = await bcrypt.compare(senhaAtual, rows[0].senha_hash);
+    if (!ok) return res.status(401).json({ error: 'Senha atual incorreta.' });
+
+    const hash = await bcrypt.hash(senhaNova, 10);
+    await pool.query('UPDATE clientes SET senha_hash = $2 WHERE id = $1', [req.user.id, hash]);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erro ao trocar a senha.' });
+  }
+});
+
 // Lista de clientes cadastrados — só admin, usado no dashboard.
 router.get('/clientes', authMiddleware, adminOnly, async (req, res) => {
   const { rows } = await pool.query(

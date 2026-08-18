@@ -81,3 +81,12 @@ export async function listCustomers(): Promise<{ id: string; nome: string; email
   const data = await parseOrThrow(res);
   return data.clientes;
 }
+
+export async function trocarSenha(senhaAtual: string, senhaNova: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/auth/senha`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ senhaAtual, senhaNova }),
+  });
+  await parseOrThrow(res);
+}

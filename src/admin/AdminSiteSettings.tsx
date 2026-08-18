@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import { useAuth } from '../auth/AuthContext';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
+import { trocarSenha } from '../auth/authService';
 import logoDefault from '../assets/logo.png';
 import heroDefault from '../assets/hero-canecas.jpg';
 
@@ -101,9 +103,51 @@ export default function AdminSiteSettings() {
         </div>
       </div>
 
+      <TrocarSenhaPanel />
+
       <button className="adm-logout-btn" onClick={() => { if (confirm('Restaurar todos os textos, cores e imagens pro padrão original?')) reset(); }}>
         Restaurar tudo pro padrão
       </button>
     </>
+  );
+}
+
+function TrocarSenhaPanel() {
+  const { user } = useAuth();
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [senhaNova, setSenhaNova] = useState('');
+  const [confirmar, setConfirmar] = useState('');
+  const [erro, setErro] = useState('');
+  const [ok, setOk] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  async function salvar() {
+    setErro('');
+    setOk(false);
+    if (senhaNova.length < 6) { setErro('A senha nova precisa ter pelo menos 6 caracteres.'); return; }
+    if (senhaNova !== confirmar) { setErro('A confirmação não bate com a senha nova.'); return; }
+    setEnviando(true);
+    try {
+      await trocarSenha(senhaAtual, senhaNova);
+      setSenhaAtual(''); setSenhaNova(''); setConfirmar('');
+      setOk(true);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao trocar a senha.');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div className="adm-panel" style={{ marginBottom: 20 }}>
+      <h2>Sua senha</h2>
+      <p className="sub">Troca a senha da conta que está logada agora{user ? <> ({user.email})</> : ''}.</p>
+      <div className="field-group"><label>Senha atual</label><input type="password" value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)} /></div>
+      <div className="field-group"><label>Senha nova</label><input type="password" value={senhaNova} onChange={e => setSenhaNova(e.target.value)} /></div>
+      <div className="field-group"><label>Confirmar senha nova</label><input type="password" value={confirmar} onChange={e => setConfirmar(e.target.value)} onKeyDown={e => e.key === 'Enter' && salvar()} /></div>
+      {erro && <p className="adm-error">{erro}</p>}
+      {ok && <div className="adm-hint" style={{ marginBottom: 14 }}>✓ Senha trocada com sucesso.</div>}
+      <button className="btn-primary" disabled={enviando} onClick={salvar}>{enviando ? 'Salvando…' : 'Trocar senha'}</button>
+    </div>
   );
 }
