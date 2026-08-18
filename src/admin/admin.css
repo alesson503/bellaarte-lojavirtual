@@ -12,7 +12,10 @@
 
 .adm-shell { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; background: var(--paper); }
 @media (max-width: 760px) { .adm-shell { grid-template-columns: 1fr; } .adm-sidebar { display: none; } }
-.adm-sidebar { border-right: 1px solid var(--line); padding: 22px 16px; display: flex; flex-direction: column; }
+/* position:sticky + height:100vh — sem isso, o menu "esticava" junto com
+   páginas compridas (Produtos, Configurações) e o rodapé (Sair/Ver loja)
+   ficava escondido lá embaixo, fora da tela. */
+.adm-sidebar { border-right: 1px solid var(--line); padding: 22px 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .adm-sidebar .adm-login-brand { padding: 0 6px; }
 .adm-nav { display: flex; flex-direction: column; gap: 3px; margin-top: 18px; }
 .adm-nav a { color: var(--graphite); text-decoration: none; font-size: 13.5px; font-weight: 600; padding: 10px 12px; border-radius: 10px; }

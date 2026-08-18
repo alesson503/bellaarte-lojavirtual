@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
 import CartaoConfigurator from './components/CartaoConfigurator';
@@ -101,6 +102,9 @@ export default function StoreApp() {
           <div className="nav-right">
             <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
             <button className="cart-pill" title="Carrinho" onClick={() => setCartOpen(true)}>🛍️ <b>{cart.length}</b></button>
+            {user?.role === 'admin' && (
+              <Link className="cart-pill" to="/admin" title="Voltar pro painel administrativo">⚙️ Painel admin</Link>
+            )}
             {user ? (
               <button className="cart-pill" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
                 <UserIcon /> {user.nome.split(' ')[0]}

@@ -80,7 +80,7 @@ nav.links a.active::after { content: ''; position: absolute; left: 0; right: 0; 
 .nav-right { display: flex; align-items: center; gap: 10px; }
 .cart-pill {
   display: inline-flex; align-items: center; gap: 7px; background: var(--card); color: var(--ink); border: 1.5px solid var(--line);
-  border-radius: 99px; padding: 9px 15px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  border-radius: 99px; padding: 9px 15px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none;
 }
 .cart-pill:hover { border-color: var(--violet); color: var(--violet); }
 .cart-pill b { background: var(--violet); color: var(--violet-ink); border-radius: 99px; padding: 1px 7px; font-size: 11px; }
