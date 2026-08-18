@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
 import { getAdesivoPrecos } from '../services/productsService';
+import { usePromocao } from '../context/PromocaoContext';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
@@ -20,6 +21,7 @@ export default function AdesivoConfigurator({
   const [shape, setShape] = useState<Formato>('circulo');
   const [sizeCm, setSizeCm] = useState(5);
   const [qty, setQty] = useState(50);
+  const { fator, percentual } = usePromocao();
   // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
   const [precos, setPrecos] = useState(ADESIVO_PRECOS_FALLBACK);
   useEffect(() => {
@@ -47,9 +49,10 @@ export default function AdesivoConfigurator({
     const lengthNeededM = (rowsNeeded * cell) / 100;
     const widthUsedM = widthUsedCm / 100;
     const precoM2 = precos[tipo][acab];
-    const total = widthUsedM * lengthNeededM * precoM2;
-    return { perRow, rowsNeeded, widthUsedCm, lengthNeededM, widthUsedM, precoM2, total, rollMaxWidthCm };
-  }, [sizeCm, qty, tipo, acab, precos]);
+    const totalCheio = widthUsedM * lengthNeededM * precoM2;
+    const total = totalCheio * fator;
+    return { perRow, rowsNeeded, widthUsedCm, lengthNeededM, widthUsedM, precoM2, totalCheio, total, rollMaxWidthCm };
+  }, [sizeCm, qty, tipo, acab, precos, fator]);
 
   const maxPreviewPx = 180;
   const mockWidthPx = Math.max(48, Math.round((calc.widthUsedCm / calc.rollMaxWidthCm) * maxPreviewPx));
@@ -134,7 +137,10 @@ export default function AdesivoConfigurator({
               </div>
             </div>
             <div className="cfg-price-bar">
-              <div className="amount mono">R$ {calc.total.toFixed(2).replace('.', ',')}<br /><small>no total</small></div>
+              <div className="amount mono">
+                {percentual > 0 && <span className="old-price">R$ {calc.totalCheio.toFixed(2).replace('.', ',')}</span>}
+                R$ {calc.total.toFixed(2).replace('.', ',')}<br /><small>no total{percentual > 0 ? ` (-${percentual}%)` : ''}</small>
+              </div>
               <div className="meta"><span className="mono">{fmt(calc.precoM2)} / m²</span><br />Entrega em até 48h</div>
             </div>
             <div className="cfg-note">

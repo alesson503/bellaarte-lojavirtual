@@ -13,6 +13,7 @@ import Toast from './components/Toast';
 import { WhatsAppIcon, UserIcon } from './icons';
 import { useAuth } from './auth/AuthContext';
 import { useSiteSettings } from './context/SiteSettingsContext';
+import { usePromocao } from './context/PromocaoContext';
 import { getConfig } from './services/configService';
 import { WHATSAPP_NUMERO_PADRAO, whatsappLink } from './config';
 import type { CartItem } from './types';
@@ -33,6 +34,7 @@ const NAV_ITEMS: { page: Page; label: string }[] = [
 export default function StoreApp() {
   const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
+  const { promocao } = usePromocao();
   const [whatsapp, setWhatsapp] = useState(WHATSAPP_NUMERO_PADRAO);
   useEffect(() => {
     getConfig().then(c => { if (c.whatsapp_numero) setWhatsapp(c.whatsapp_numero); }).catch(() => { /* mantém o padrão */ });
@@ -86,6 +88,11 @@ export default function StoreApp() {
 
   return (
     <>
+      {promocao && (
+        <div className="promo-banner">
+          🎉 <b>{promocao.nome}</b> — {promocao.percentual}% OFF em toda a loja
+        </div>
+      )}
       <header className="site">
         <div className="shell nav">
           <button className="brand" onClick={() => goPage('inicio')}>

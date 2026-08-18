@@ -6,13 +6,24 @@ const { syncProdutosFromErp, nomesAdesivoNaoUsados } = require('../erpSync');
 const router = express.Router();
 
 // GET /api/produtos — público, qualquer visitante da loja pode ver.
-// Por padrão só devolve os ativos; passa ?todos=1 (autenticado admin) pra ver tudo.
+// "preco" já vem com desconto aplicado (o maior entre o desconto do produto
+// e a promoção geral ativa); "preco_original" é o valor cheio, pra riscar.
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url FROM produtos WHERE ativo = true ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url, desconto_percentual FROM produtos WHERE ativo = true ORDER BY categoria, nome'
     );
-    res.json({ produtos: rows });
+    const { rows: promoRows } = await pool.query(
+      `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes
+       WHERE ativo = true AND now() BETWEEN data_inicio AND data_fim`
+    );
+    const promoGeral = Number(promoRows[0]?.percentual || 0);
+    const produtos = rows.map(p => {
+      const desconto = Math.max(Number(p.desconto_percentual || 0), promoGeral);
+      const precoFinal = desconto > 0 ? Math.round(p.preco * (1 - desconto / 100) * 100) / 100 : p.preco;
+      return { ...p, preco_original: p.preco, preco: precoFinal, desconto_percentual: desconto };
+    });
+    res.json({ produtos, promocao_geral: promoGeral });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Erro ao buscar produtos.' });
@@ -145,7 +156,10 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { nome, categoria, preco, unidade, ativo } = req.body || {};
+    const { nome, categoria, preco, unidade, ativo, desconto_percentual } = req.body || {};
+    if (desconto_percentual != null && !(Number(desconto_percentual) >= 0 && Number(desconto_percentual) <= 100)) {
+      return res.status(400).json({ error: 'Desconto precisa ser entre 0 e 100.' });
+    }
     const { rows } = await pool.query(
       `UPDATE produtos SET
          nome = COALESCE($2, nome),
@@ -153,9 +167,11 @@ router.put('/:id', async (req, res) => {
          preco = COALESCE($4, preco),
          unidade = COALESCE($5, unidade),
          ativo = COALESCE($6, ativo),
+         desconto_percentual = CASE WHEN $7::text IS NULL THEN desconto_percentual ELSE NULLIF($7, '')::numeric END,
          atualizado_em = now()
        WHERE id = $1 RETURNING *`,
-      [req.params.id, nome ?? null, categoria ?? null, preco ?? null, unidade ?? null, ativo ?? null]
+      [req.params.id, nome ?? null, categoria ?? null, preco ?? null, unidade ?? null, ativo ?? null,
+       desconto_percentual === undefined ? null : String(desconto_percentual)]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });
     res.json({ produto: rows[0] });

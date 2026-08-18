@@ -32,6 +32,8 @@ export interface LojaProduto {
   nome: string;
   categoria: string;
   preco: number;
+  preco_original: number;
+  desconto_percentual: number;
   unidade: string | null;
   ativo: boolean;
   imagem_url: string | null;
@@ -42,6 +44,16 @@ export async function listLojaProducts(): Promise<LojaProduto[]> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erro ao buscar produtos.');
   return data.produtos;
+}
+
+export async function atualizarDescontoProduto(id: string, desconto: number | null): Promise<void> {
+  const res = await fetch(`${API_URL}/api/produtos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ desconto_percentual: desconto ?? '' }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao salvar desconto.');
 }
 
 export async function uploadImagemProduto(id: string, imagemDataUrl: string): Promise<void> {

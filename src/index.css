@@ -64,6 +64,12 @@ input[type="range"]::-webkit-slider-thumb {
 .shell { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
 @media (max-width: 640px) { .shell { padding: 0 18px; } }
 
+.promo-banner {
+  background: var(--violet); color: var(--violet-ink); text-align: center; font-size: 13px; font-weight: 700;
+  padding: 9px 16px;
+}
+.promo-banner b { text-transform: uppercase; letter-spacing: 0.02em; }
+
 /* ── nav ── */
 header.site { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; }
@@ -239,6 +245,7 @@ section { padding: 68px 0; }
 .price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 6px; }
 .price-row .p { font-size: 19px; font-weight: 800; color: var(--violet-deep); }
 .price-row .p small { font-size: 11px; font-weight: 600; color: var(--graphite-faint); }
+.old-price { display: block; font-size: 12px; font-weight: 600; color: var(--graphite-faint); text-decoration: line-through; }
 .price-row .from { font-size: 10.5px; color: var(--graphite-faint); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; margin-bottom: 2px; }
 .add-btn { width: 100%; background: var(--ink); color: var(--paper); border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.12s ease; }
 .add-btn:hover { background: var(--violet); }

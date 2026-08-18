@@ -2,6 +2,19 @@ import { useState } from 'react';
 import type { Produto } from '../data';
 import { fmt } from '../data';
 import { CategoryIcon } from '../icons';
+import { usePromocao } from '../context/PromocaoContext';
+
+// Preço atual + (opcional) preço riscado e selo de desconto — usado em
+// todos os tipos de produto pra manter a mesma cara.
+function PriceTag({ preco, precoOriginal, unidade }: { preco: number; precoOriginal?: number; unidade?: string }) {
+  const temDesconto = precoOriginal != null && precoOriginal > preco;
+  return (
+    <div className="p">
+      {temDesconto && <span className="old-price">{fmt(precoOriginal)}</span>}
+      {fmt(preco)}{unidade && <small> /{unidade}</small>}
+    </div>
+  );
+}
 
 export default function ProductCard({
   produto,
@@ -12,11 +25,15 @@ export default function ProductCard({
   onAdd: (nome: string, preco: number) => void;
   onGoPersonalize: (scrollToId: 'adesivos' | 'cartoes') => void;
 }) {
+  const { fator, percentual } = usePromocao();
+
   if (produto.tipo === 'link') {
+    const desdeComPromo = produto.desde * fator;
     return (
       <div className="prod-card">
         <div className="prod-thumb">
           <span className="cat-tag">{produto.categoria}</span>
+          {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
           <CategoryIcon categoria={produto.categoria} />
         </div>
         <div className="prod-body">
@@ -24,7 +41,7 @@ export default function ProductCard({
           <div className="price-row">
             <div>
               <div className="from">a partir de</div>
-              <div className="p">{fmt(produto.desde)}{produto.unidade && <small> /{produto.unidade}</small>}</div>
+              <PriceTag preco={desdeComPromo} precoOriginal={percentual > 0 ? produto.desde : undefined} unidade={produto.unidade} />
             </div>
           </div>
           <button className="add-btn" onClick={() => onGoPersonalize(produto.target)}>Personalizar e ver preço →</button>
@@ -45,6 +62,7 @@ export default function ProductCard({
     <div className="prod-card">
       <div className="prod-thumb">
         <span className="cat-tag">{produto.categoria}</span>
+        {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
         {produto.imagem ? (
           <img src={produto.imagem} alt={produto.nome} className="prod-thumb-img" />
         ) : (
@@ -54,7 +72,7 @@ export default function ProductCard({
       <div className="prod-body">
         <b className="name">{produto.nome}</b>
         <div className="price-row">
-          <div className="p">{fmt(produto.preco)}{produto.unidade && <small> /{produto.unidade}</small>}</div>
+          <PriceTag preco={produto.preco} precoOriginal={produto.precoOriginal} unidade={produto.unidade} />
         </div>
         <button className="add-btn" onClick={() => onAdd(produto.nome, produto.preco)}>Adicionar ao pedido</button>
       </div>
@@ -63,15 +81,18 @@ export default function ProductCard({
 }
 
 function MultiCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'multi' }>; onAdd: (nome: string, preco: number) => void }) {
+  const { fator, percentual } = usePromocao();
   const [sel, setSel] = useState<Record<string, string>>(
     () => Object.fromEntries(produto.dims.map(d => [d.key, d.options[0]])),
   );
-  const preco = produto.preco(sel);
+  const precoCheio = produto.preco(sel);
+  const preco = precoCheio != null ? precoCheio * fator : null;
 
   return (
     <div className="prod-card">
       <div className="prod-thumb">
         <span className="cat-tag">{produto.categoria}</span>
+        {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
         <CategoryIcon categoria={produto.categoria} />
       </div>
       <div className="prod-body">
@@ -96,9 +117,11 @@ function MultiCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'mult
           ))}
         </div>
         <div className="price-row">
-          <div className="p">
-            {preco == null ? 'combinação indisponível' : <>{fmt(preco)}{produto.unidade && <small> /{produto.unidade}</small>}</>}
-          </div>
+          {preco == null ? (
+            <div className="p">combinação indisponível</div>
+          ) : (
+            <PriceTag preco={preco} precoOriginal={percentual > 0 ? precoCheio! : undefined} unidade={produto.unidade} />
+          )}
         </div>
         <button
           className="add-btn" disabled={preco == null}
@@ -112,15 +135,18 @@ function MultiCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'mult
 }
 
 function MedidaCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'medida' }>; onAdd: (nome: string, preco: number) => void }) {
+  const { fator, percentual } = usePromocao();
   const [larg, setLarg] = useState(1);
   const [alt, setAlt] = useState(1);
   const m2 = Math.max(0.1, larg) * Math.max(0.1, alt);
-  const preco = m2 * produto.precoM2;
+  const precoCheio = m2 * produto.precoM2;
+  const preco = precoCheio * fator;
 
   return (
     <div className="prod-card">
       <div className="prod-thumb">
         <span className="cat-tag">{produto.categoria}</span>
+        {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
         <CategoryIcon categoria={produto.categoria} />
       </div>
       <div className="prod-body">
@@ -146,7 +172,7 @@ function MedidaCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'med
         <div className="price-row">
           <div>
             <div className="from">{m2.toFixed(2).replace('.', ',')} m² · {fmt(produto.precoM2)}/m²</div>
-            <div className="p">{fmt(preco)}</div>
+            <PriceTag preco={preco} precoOriginal={percentual > 0 ? precoCheio : undefined} />
           </div>
         </div>
         <button

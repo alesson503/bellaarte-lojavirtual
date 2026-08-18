@@ -42,6 +42,10 @@ async function migrate() {
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagem_url TEXT;
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagem_origem TEXT NOT NULL DEFAULT 'nenhuma';
 
+    -- Desconto individual do produto (ex: 10.00 = 10%) — não vem do ERP,
+    -- é só da loja, a sincronização nunca mexe nisso.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS desconto_percentual NUMERIC(5,2);
+
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nome        TEXT NOT NULL,
@@ -103,6 +107,20 @@ async function migrate() {
     );
     INSERT INTO configuracoes (chave, valor) VALUES ('whatsapp_numero', '5511948991616')
     ON CONFLICT (chave) DO NOTHING;
+
+    -- Promoções gerais da loja (ex: "Dia dos Pais", 15%, 01/08 a 15/08) —
+    -- valem pra loja inteira (produtos simples + todos os configuradores),
+    -- com início/fim automáticos. "ativo" é um desliga-tudo manual, caso
+    -- queira encerrar antes da data.
+    CREATE TABLE IF NOT EXISTS promocoes (
+      id          SERIAL PRIMARY KEY,
+      nome        TEXT NOT NULL,
+      percentual  NUMERIC(5,2) NOT NULL,
+      data_inicio TIMESTAMPTZ NOT NULL,
+      data_fim    TIMESTAMPTZ NOT NULL,
+      ativo       BOOLEAN NOT NULL DEFAULT true,
+      criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
   `);
 }
 

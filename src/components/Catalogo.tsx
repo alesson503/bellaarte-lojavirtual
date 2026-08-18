@@ -30,6 +30,8 @@ export default function Catalogo({
           preco: p.preco,
           unidade: p.unidade ?? undefined,
           imagem: p.imagem_url ?? undefined,
+          precoOriginal: p.desconto_percentual > 0 ? p.preco_original : undefined,
+          descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
         })));
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });

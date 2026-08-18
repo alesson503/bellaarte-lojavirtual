@@ -1,5 +1,6 @@
 import { useMemo, useState, type RefObject } from 'react';
 import { CARTAO_PRECOS, IMP_LABEL } from '../data';
+import { usePromocao } from '../context/PromocaoContext';
 
 const QTY_OPTIONS = [100, 250, 500, 1000];
 
@@ -14,6 +15,7 @@ export default function CartaoConfigurator({
   const [verniz, setVerniz] = useState<'nao' | 'sim'>('nao');
   const [imp, setImp] = useState('4x0');
   const [flipped, setFlipped] = useState(false);
+  const { fator, percentual } = usePromocao();
 
   const opcoesImp = useMemo(() => {
     const tabela = qty === 1000 && verniz === 'sim' ? CARTAO_PRECOS[1000].comVerniz! : CARTAO_PRECOS[qty].semVerniz;
@@ -24,10 +26,11 @@ export default function CartaoConfigurator({
   // pra "com verniz" e não existe 4×1 com verniz), volta pra primeira válida.
   const impAtual = opcoesImp.includes(imp) ? imp : opcoesImp[0];
 
-  const total = useMemo(() => {
+  const totalCheio = useMemo(() => {
     const tabela = qty === 1000 && verniz === 'sim' ? CARTAO_PRECOS[1000].comVerniz! : CARTAO_PRECOS[qty].semVerniz;
     return tabela[impAtual];
   }, [qty, verniz, impAtual]);
+  const total = totalCheio * fator;
 
   function pickQty(q: number) {
     setQty(q);
@@ -91,7 +94,10 @@ export default function CartaoConfigurator({
               </div>
             )}
             <div className="cfg-price-bar">
-              <div className="amount mono">R$ {total.toFixed(2).replace('.', ',')}<br /><small>no total</small></div>
+              <div className="amount mono">
+                {percentual > 0 && <span className="old-price">R$ {totalCheio.toFixed(2).replace('.', ',')}</span>}
+                R$ {total.toFixed(2).replace('.', ',')}<br /><small>no total{percentual > 0 ? ` (-${percentual}%)` : ''}</small>
+              </div>
               <div className="meta">≈ R$ <span className="mono">{(total / qty).toFixed(2).replace('.', ',')}</span> / un</div>
             </div>
             <button

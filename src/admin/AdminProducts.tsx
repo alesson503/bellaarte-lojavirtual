@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   listErpProducts, listLojaProducts, sincronizarProdutosErp,
-  getAdesivoStatus, corrigirNomeAdesivo, uploadImagemProduto, removerImagemProduto,
+  getAdesivoStatus, corrigirNomeAdesivo, uploadImagemProduto, removerImagemProduto, atualizarDescontoProduto,
   type ErpProduto, type LojaProduto, type AdesivoCombo,
 } from '../services/productsService';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
@@ -16,6 +16,9 @@ export default function AdminProducts() {
   const [enviandoFoto, setEnviandoFoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const alvoUploadRef = useRef<string | null>(null);
+  const [editandoDesconto, setEditandoDesconto] = useState<string | null>(null);
+  const [descontoValor, setDescontoValor] = useState('');
+  const [salvandoDesconto, setSalvandoDesconto] = useState<string | null>(null);
 
   function carregar() {
     listLojaProducts().then(setLojaProdutos).catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar produtos da loja.'));
@@ -70,6 +73,20 @@ export default function AdminProducts() {
     }
   }
 
+  async function salvarDesconto(id: string) {
+    setSalvandoDesconto(id);
+    try {
+      const num = descontoValor.trim() === '' ? null : Number(descontoValor);
+      await atualizarDescontoProduto(id, num);
+      setEditandoDesconto(null);
+      carregar();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível salvar o desconto.');
+    } finally {
+      setSalvandoDesconto(null);
+    }
+  }
+
   return (
     <>
       <div className="adm-panel" style={{ marginBottom: 20 }}>
@@ -99,7 +116,7 @@ export default function AdminProducts() {
         ) : (
           <table className="adm-table" style={{ marginTop: 16 }}>
             <thead>
-              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th></th></tr>
+              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Desconto</th><th></th></tr>
             </thead>
             <tbody>
               {lojaProdutos.map(p => (
@@ -113,7 +130,27 @@ export default function AdminProducts() {
                   </td>
                   <td><b>{p.nome}</b></td>
                   <td>{p.categoria}</td>
-                  <td>{fmt(p.preco)}{p.unidade && <small> /{p.unidade}</small>}</td>
+                  <td>
+                    {p.desconto_percentual > 0 && <span className="old-price">{fmt(p.preco_original)}</span>}
+                    {fmt(p.preco)}{p.unidade && <small> /{p.unidade}</small>}
+                  </td>
+                  <td>
+                    {editandoDesconto === p.id ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input value={descontoValor} onChange={e => setDescontoValor(e.target.value)} placeholder="0"
+                          style={{ width: 56, height: 32, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 8px', fontSize: 12.5 }} />
+                        <span style={{ fontSize: 12 }}>%</span>
+                        <button className="adm-link-btn" style={{ margin: 0 }} disabled={salvandoDesconto === p.id} onClick={() => salvarDesconto(p.id)}>
+                          {salvandoDesconto === p.id ? '...' : 'Salvar'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="adm-link-btn" style={{ margin: 0 }}
+                        onClick={() => { setEditandoDesconto(p.id); setDescontoValor(p.desconto_percentual > 0 ? String(p.desconto_percentual) : ''); }}>
+                        {p.desconto_percentual > 0 ? `-${p.desconto_percentual}% · editar` : 'Definir desconto'}
+                      </button>
+                    )}
+                  </td>
                   <td>
                     {enviandoFoto === p.id ? (
                       <span style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>...</span>
