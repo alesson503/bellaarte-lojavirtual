@@ -20,10 +20,12 @@ export default function ProductCard({
   produto,
   onAdd,
   onGoPersonalize,
+  onOpenDetalhe,
 }: {
   produto: Produto;
   onAdd: (nome: string, preco: number) => void;
   onGoPersonalize: (scrollToId: 'adesivos' | 'cartoes') => void;
+  onOpenDetalhe: (produto: Extract<Produto, { tipo: 'simples' }>) => void;
 }) {
   const { fator, percentual } = usePromocao();
 
@@ -59,7 +61,7 @@ export default function ProductCard({
   }
 
   return (
-    <div className="prod-card">
+    <div className="prod-card prod-card-click" onClick={() => onOpenDetalhe(produto)}>
       <div className="prod-thumb">
         <span className="cat-tag">{produto.categoria}</span>
         {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
@@ -74,7 +76,7 @@ export default function ProductCard({
         <div className="price-row">
           <PriceTag preco={produto.preco} precoOriginal={produto.precoOriginal} unidade={produto.unidade} />
         </div>
-        <button className="add-btn" onClick={() => onAdd(produto.nome, produto.preco)}>Adicionar ao pedido</button>
+        <button className="add-btn" onClick={e => { e.stopPropagation(); onOpenDetalhe(produto); }}>Ver detalhes →</button>
       </div>
     </div>
   );

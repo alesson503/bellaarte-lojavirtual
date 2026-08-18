@@ -23,7 +23,7 @@ export default function CheckoutModal({
     if (open && user) setNome(prev => prev || user.nome);
   }, [open, user]);
 
-  const total = cart.reduce((s, x) => s + x.preco, 0);
+  const total = cart.reduce((s, x) => s + x.preco * x.quantidade, 0);
 
   async function submit() {
     if (!nome.trim() || !phone.trim()) { setStatus('erro'); setErroMsg('Preenche pelo menos nome e WhatsApp pra continuar.'); return; }
@@ -57,7 +57,10 @@ export default function CheckoutModal({
         </div>
         <div className="checkout-summary">
           {cart.map((x, i) => (
-            <div className="checkout-summary-row" key={i}><span>{x.nome}</span><span>{fmt(x.preco)}</span></div>
+            <div className="checkout-summary-row" key={i}>
+              <span>{x.nome}{x.quantidade > 1 ? ` × ${x.quantidade}` : ''}{x.observacao ? ` — obs: ${x.observacao}` : ''}</span>
+              <span>{fmt(x.preco * x.quantidade)}</span>
+            </div>
           ))}
           <div className="checkout-summary-row" style={{ fontWeight: 800, color: 'var(--violet-deep)', borderTop: '1px dashed var(--blush-line)', marginTop: 6, paddingTop: 8 }}>
             <span>Total</span><span>{fmt(total)}</span>

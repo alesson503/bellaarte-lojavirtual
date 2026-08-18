@@ -10,7 +10,7 @@ export default function CartModal({
   onRemove: (idx: number) => void;
   onCheckout: () => void;
 }) {
-  const total = cart.reduce((s, x) => s + x.preco, 0);
+  const total = cart.reduce((s, x) => s + x.preco * x.quantidade, 0);
   return (
     <div className={`modal-overlay ${open ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-box">
@@ -23,9 +23,12 @@ export default function CartModal({
           ) : (
             cart.map((item, i) => (
               <div className="cart-row" key={i}>
-                <div className="info"><b>{item.nome}</b></div>
+                <div className="info">
+                  <b>{item.nome}{item.quantidade > 1 ? ` × ${item.quantidade}` : ''}</b>
+                  {item.observacao && <div>obs: {item.observacao}</div>}
+                </div>
                 <div className="price-col">
-                  <b>{fmt(item.preco)}</b>
+                  <b>{fmt(item.preco * item.quantidade)}</b>
                   <button className="cart-remove" title="Remover" onClick={() => onRemove(i)}>🗑️</button>
                 </div>
               </div>

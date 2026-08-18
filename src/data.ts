@@ -48,6 +48,8 @@ export interface SimpleProduct {
   imagem?: string;
   precoOriginal?: number;
   descontoPercentual?: number;
+  descricao?: string;
+  cores?: string[];
 }
 
 export type Produto = LinkProduct | MultiProduct | MedidaProduct | SimpleProduct;

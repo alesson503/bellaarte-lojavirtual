@@ -46,6 +46,12 @@ async function migrate() {
     -- é só da loja, a sincronização nunca mexe nisso.
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS desconto_percentual NUMERIC(5,2);
 
+    -- Descrição e cores disponíveis: só existem na loja (o ERP não manda
+    -- isso), preenchidas manualmente pelo admin — igual a foto manual, a
+    -- sincronização automática nunca sobrescreve.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS descricao TEXT;
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS cores TEXT[] NOT NULL DEFAULT '{}';
+
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nome        TEXT NOT NULL,

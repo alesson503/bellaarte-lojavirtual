@@ -61,7 +61,14 @@ export default function AdminOrders() {
             {orders.map(o => (
               <tr key={o.id}>
                 <td><b>{o.nome}</b><br />{o.telefone}</td>
-                <td>{o.itens.map(i => i.nome).join(', ')}</td>
+                <td>
+                  {o.itens.map((i, idx) => (
+                    <div key={idx} style={{ marginBottom: o.itens.length > 1 ? 4 : 0 }}>
+                      {i.nome}{i.quantidade > 1 ? ` × ${i.quantidade}` : ''}
+                      {i.observacao && <div style={{ fontSize: 11, color: 'var(--graphite-faint)' }}>obs: {i.observacao}</div>}
+                    </div>
+                  ))}
+                </td>
                 <td>{o.entrega}</td>
                 <td>{fmt(o.total)}</td>
                 <td>{new Date(o.criado_em).toLocaleString('pt-BR')}</td>

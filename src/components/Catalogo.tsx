@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria } from '../data';
+import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria, type SimpleProduct } from '../data';
 import { listLojaProducts } from '../services/productsService';
 import { SearchIcon } from '../icons';
 import ProductCard from './ProductCard';
+import ProductDetailModal from './ProductDetailModal';
 
 export default function Catalogo({
   onAdd,
@@ -15,6 +16,7 @@ export default function Catalogo({
 }) {
   const [filtro, setFiltro] = useState(filtroInicial);
   const [busca, setBusca] = useState('');
+  const [detalhe, setDetalhe] = useState<SimpleProduct | null>(null);
   // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
   // por qualquer motivo, cai pro catálogo fixo em vez de mostrar vitrine vazia.
   const [simples, setSimples] = useState(SIMPLES);
@@ -32,6 +34,8 @@ export default function Catalogo({
           imagem: p.imagem_url ?? undefined,
           precoOriginal: p.desconto_percentual > 0 ? p.preco_original : undefined,
           descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
+          descricao: p.descricao ?? undefined,
+          cores: p.cores?.length ? p.cores : undefined,
         })));
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });
@@ -79,7 +83,15 @@ export default function Catalogo({
 
         <div className="gallery">
           {filtrados.length ? (
-            filtrados.map((p, i) => <ProductCard key={('id' in p ? p.id : p.nome) + i} produto={p} onAdd={onAdd} onGoPersonalize={onGoPersonalize} />)
+            filtrados.map((p, i) => (
+              <ProductCard
+                key={('id' in p ? p.id : p.nome) + i}
+                produto={p}
+                onAdd={onAdd}
+                onGoPersonalize={onGoPersonalize}
+                onOpenDetalhe={setDetalhe}
+              />
+            ))
           ) : (
             <div className="empty">
               <SearchIcon />
@@ -88,6 +100,7 @@ export default function Catalogo({
           )}
         </div>
       </div>
+      <ProductDetailModal produto={detalhe} onClose={() => setDetalhe(null)} onAdd={onAdd} />
     </section>
   );
 }
