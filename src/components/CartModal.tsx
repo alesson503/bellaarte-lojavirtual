@@ -16,7 +16,7 @@ export default function CartModal({
       <div className="modal-box">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2 className="serif">Meu carrinho</h2>
-        <p className="modal-sub">Itens que você foi adicionando na prévia.</p>
+        <p className="modal-sub">Itens que você foi adicionando.</p>
         <div>
           {cart.length === 0 ? (
             <div className="cart-empty">Seu carrinho está vazio.<br />Escolha um produto pra começar.</div>

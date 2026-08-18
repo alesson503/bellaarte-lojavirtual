@@ -224,7 +224,6 @@ export default function StoreApp() {
       <footer className="site">
         <div className="shell foot-row">
           <span>🎨 Bella Arte — Gráfica &amp; Personalizados, São Paulo/SP</span>
-          <span>Prévia de layout, com produtos reais — ainda não é a loja de verdade</span>
         </div>
       </footer>
 
