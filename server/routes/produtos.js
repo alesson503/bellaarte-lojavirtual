@@ -1,7 +1,7 @@
 const express = require('express');
 const { pool } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
-const { syncProdutosFromErp } = require('../erpSync');
+const { syncProdutosFromErp, nomesAdesivoNaoUsados } = require('../erpSync');
 
 const router = express.Router();
 
@@ -19,8 +19,54 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/produtos/adesivo-precos — público, usado pelo configurador de
+// Adesivo. Sempre devolve os 6 preços (o último bom conhecido, mesmo que a
+// última sincronização não tenha achado o produto no ERP).
+router.get('/adesivo-precos', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT material, acabamento, preco FROM adesivo_precos');
+    const precos = {};
+    for (const r of rows) {
+      precos[r.material] ??= {};
+      precos[r.material][r.acabamento] = r.preco;
+    }
+    res.json({ precos });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erro ao buscar preços do Adesivo.' });
+  }
+});
+
 // A partir daqui, só admin (cadastro/edição de produto é coisa de loja, não de cliente).
 router.use(authMiddleware, adminOnly);
+
+// GET /api/produtos/adesivo-status — pro painel admin: mostra os 6 preços
+// com data da última sincronização, e sugestões de nome quando algum não
+// bateu com o ERP na última tentativa.
+router.get('/adesivo-status', async (req, res) => {
+  try {
+    const { rows: combos } = await pool.query(
+      'SELECT material, acabamento, preco, erp_nome_esperado, sincronizado, atualizado_em FROM adesivo_precos ORDER BY material, acabamento'
+    );
+
+    let sugestoes = [];
+    const algumDessincronizado = combos.some(c => !c.sincronizado);
+    if (algumDessincronizado && process.env.ERP_API_URL && process.env.ERP_API_SECRET) {
+      const erpRes = await fetch(`${process.env.ERP_API_URL}/api/produtos-site`, {
+        headers: { 'x-loja-secret': process.env.ERP_API_SECRET },
+      });
+      const erpData = await erpRes.json().catch(() => ({}));
+      if (erpRes.ok) {
+        sugestoes = nomesAdesivoNaoUsados(erpData.produtos || [], combos.map(c => c.erp_nome_esperado));
+      }
+    }
+
+    res.json({ combos, sugestoes });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erro ao buscar status do Adesivo.' });
+  }
+});
 
 router.get('/todos', async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM produtos ORDER BY categoria, nome');
@@ -45,6 +91,28 @@ router.get('/erp', async (req, res) => {
     console.error('Erro ao buscar produtos do ERP:', e);
     res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível falar com o ERP agora.' });
   }
+});
+
+// PUT /api/produtos/adesivo-precos/:material/:acabamento — corrige o nome
+// esperado (ex: produto foi renomeado no ERP) e já tenta sincronizar de novo.
+router.put('/adesivo-precos/:material/:acabamento', async (req, res) => {
+  const { erp_nome_esperado } = req.body || {};
+  if (!erp_nome_esperado?.trim()) return res.status(400).json({ error: 'Nome esperado é obrigatório.' });
+  const { rowCount } = await pool.query(
+    'UPDATE adesivo_precos SET erp_nome_esperado = $3, sincronizado = false WHERE material = $1 AND acabamento = $2',
+    [req.params.material, req.params.acabamento, erp_nome_esperado.trim()]
+  );
+  if (!rowCount) return res.status(404).json({ error: 'Combinação não encontrada.' });
+  try {
+    await syncProdutosFromErp();
+  } catch (e) {
+    console.error('Erro ao ressincronizar após corrigir nome:', e);
+  }
+  const { rows } = await pool.query(
+    'SELECT material, acabamento, preco, erp_nome_esperado, sincronizado, atualizado_em FROM adesivo_precos WHERE material = $1 AND acabamento = $2',
+    [req.params.material, req.params.acabamento]
+  );
+  res.json({ combo: rows[0] });
 });
 
 // Dispara a sincronização na hora (a mesma que roda sozinha a cada 30min).

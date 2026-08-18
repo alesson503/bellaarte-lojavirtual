@@ -1,5 +1,6 @@
-import { useMemo, useState, type RefObject } from 'react';
-import { ADESIVO_PRECOS, fmt } from '../data';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
+import { getAdesivoPrecos } from '../services/productsService';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
@@ -19,6 +20,11 @@ export default function AdesivoConfigurator({
   const [shape, setShape] = useState<Formato>('circulo');
   const [sizeCm, setSizeCm] = useState(5);
   const [qty, setQty] = useState(50);
+  // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
+  const [precos, setPrecos] = useState(ADESIVO_PRECOS_FALLBACK);
+  useEffect(() => {
+    getAdesivoPrecos().then(setPrecos).catch(() => { /* mantém a tabela fixa (fallback) */ });
+  }, []);
 
   // Bobina: largura MÁXIMA de 1m (100cm), mas começa pequena — cresce em
   // largura primeiro (só usando o que precisar), e só depois de bater no
@@ -40,10 +46,10 @@ export default function AdesivoConfigurator({
     }
     const lengthNeededM = (rowsNeeded * cell) / 100;
     const widthUsedM = widthUsedCm / 100;
-    const precoM2 = ADESIVO_PRECOS[tipo][acab];
+    const precoM2 = precos[tipo][acab];
     const total = widthUsedM * lengthNeededM * precoM2;
     return { perRow, rowsNeeded, widthUsedCm, lengthNeededM, widthUsedM, precoM2, total, rollMaxWidthCm };
-  }, [sizeCm, qty, tipo, acab]);
+  }, [sizeCm, qty, tipo, acab, precos]);
 
   const maxPreviewPx = 180;
   const mockWidthPx = Math.max(48, Math.round((calc.widthUsedCm / calc.rollMaxWidthCm) * maxPreviewPx));

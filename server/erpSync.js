@@ -1,7 +1,10 @@
-// Sincronização de produtos do ERP — só os "simples" (preço fixo, sem
-// calculadora própria). Adesivo (UV/Vinil), Cartão de Visita, Banner
-// e Placa PS/Panfletos já têm configurador dedicado na loja com preço
-// vindo de tabela própria — não duplica esses aqui.
+// Sincronização com o ERP — busca os produtos uma vez e atualiza duas
+// coisas com o mesmo resultado:
+//  1) os produtos "simples" (preço fixo, sem calculadora própria)
+//  2) a tabela de preço do configurador de Adesivo (por nome esperado)
+//
+// Adesivo (UV/Vinil), Cartão de Visita, Banner e Placa PS/Panfletos já têm
+// configurador dedicado na loja — não entram na lista de "simples".
 const { pool } = require('./db');
 
 function ehConfiguravel(p) {
@@ -22,10 +25,11 @@ async function syncProdutosFromErp() {
   });
   const erpData = await erpRes.json().catch(() => ({}));
   if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou a busca de produtos.');
+  const todosDoErp = erpData.produtos || [];
 
-  const simples = (erpData.produtos || []).filter(p => !ehConfiguravel(p));
+  // 1) Produtos simples
+  const simples = todosDoErp.filter(p => !ehConfiguravel(p));
   const vistosErpIds = [];
-
   for (const p of simples) {
     vistosErpIds.push(p.erp_id ?? p.id);
     await pool.query(
@@ -37,9 +41,6 @@ async function syncProdutosFromErp() {
       [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : null, p.id]
     );
   }
-
-  // Produto que sumiu do ERP (ou virou "não simples") fica inativo — não
-  // apaga, só some da vitrine, caso volte a aparecer o histórico continua.
   if (vistosErpIds.length) {
     await pool.query(
       `UPDATE produtos SET ativo = false, atualizado_em = now()
@@ -48,7 +49,36 @@ async function syncProdutosFromErp() {
     );
   }
 
+  // 2) Preço do configurador de Adesivo — casa por nome exato.
+  const { rows: combos } = await pool.query('SELECT material, acabamento, erp_nome_esperado FROM adesivo_precos');
+  for (const combo of combos) {
+    const achado = todosDoErp.find(p => p.nome.trim().toLowerCase() === combo.erp_nome_esperado.trim().toLowerCase());
+    if (achado) {
+      await pool.query(
+        `UPDATE adesivo_precos SET preco = $3, sincronizado = true, atualizado_em = now()
+         WHERE material = $1 AND acabamento = $2`,
+        [combo.material, combo.acabamento, Number(achado.preco)]
+      );
+    } else {
+      await pool.query(
+        `UPDATE adesivo_precos SET sincronizado = false, atualizado_em = now()
+         WHERE material = $1 AND acabamento = $2`,
+        [combo.material, combo.acabamento]
+      );
+    }
+  }
+
   return { ok: true, total: simples.length };
 }
 
-module.exports = { syncProdutosFromErp };
+// Nomes de produtos "Adesivo" no ERP que não bateram com nenhuma combinação
+// esperada — úteis como sugestão quando um nome esperado não é encontrado.
+function nomesAdesivoNaoUsados(todosDoErp, nomesEsperados) {
+  const esperadosLower = new Set(nomesEsperados.map(n => n.trim().toLowerCase()));
+  return todosDoErp
+    .filter(p => p.categoria === 'Adesivo' && p.unidade_venda === 'm2')
+    .map(p => p.nome)
+    .filter(nome => !esperadosLower.has(nome.trim().toLowerCase()));
+}
+
+module.exports = { syncProdutosFromErp, nomesAdesivoNaoUsados };

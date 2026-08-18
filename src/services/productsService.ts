@@ -41,3 +41,41 @@ export async function listLojaProducts(): Promise<LojaProduto[]> {
   if (!res.ok) throw new Error(data.error || 'Erro ao buscar produtos.');
   return data.produtos;
 }
+
+// Preço do configurador de Adesivo — vem do banco (sincronizado do ERP por
+// nome), mesmo formato que a tabela fixa antiga em data.ts.
+export type AdesivoPrecos = Record<'UV' | 'Vinil', Record<'Recortado' | 'Refilado' | 'Laminado', number>>;
+
+export async function getAdesivoPrecos(): Promise<AdesivoPrecos> {
+  const res = await fetch(`${API_URL}/api/produtos/adesivo-precos`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao buscar preços do Adesivo.');
+  return data.precos;
+}
+
+export interface AdesivoCombo {
+  material: string;
+  acabamento: string;
+  preco: number | null;
+  erp_nome_esperado: string;
+  sincronizado: boolean;
+  atualizado_em: string;
+}
+
+export async function getAdesivoStatus(): Promise<{ combos: AdesivoCombo[]; sugestoes: string[] }> {
+  const res = await fetch(`${API_URL}/api/produtos/adesivo-status`, { headers: authHeader() });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao buscar status do Adesivo.');
+  return data;
+}
+
+export async function corrigirNomeAdesivo(material: string, acabamento: string, novoNome: string): Promise<AdesivoCombo> {
+  const res = await fetch(`${API_URL}/api/produtos/adesivo-precos/${encodeURIComponent(material)}/${encodeURIComponent(acabamento)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ erp_nome_esperado: novoNome }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao corrigir nome.');
+  return data.combo;
+}

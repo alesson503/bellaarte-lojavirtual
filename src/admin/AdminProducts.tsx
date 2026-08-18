@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { listErpProducts, listLojaProducts, sincronizarProdutosErp, type ErpProduto, type LojaProduto } from '../services/productsService';
+import {
+  listErpProducts, listLojaProducts, sincronizarProdutosErp,
+  getAdesivoStatus, corrigirNomeAdesivo,
+  type ErpProduto, type LojaProduto, type AdesivoCombo,
+} from '../services/productsService';
 import { fmt } from '../data';
 
 export default function AdminProducts() {
@@ -71,7 +75,9 @@ export default function AdminProducts() {
         )}
       </div>
 
-      <div className="adm-panel">
+      <AdesivoStatusPanel />
+
+      <div className="adm-panel" style={{ marginTop: 20 }}>
         <h2>Catálogo completo do ERP</h2>
         <p className="sub">Todos os produtos ativos no ERP (inclusive os que já têm configurador na loja e por isso não entram na vitrine acima) — só pra conferência.</p>
         {!erpProdutos ? (
@@ -95,5 +101,106 @@ export default function AdminProducts() {
         )}
       </div>
     </>
+  );
+}
+
+function AdesivoStatusPanel() {
+  const [combos, setCombos] = useState<AdesivoCombo[] | null>(null);
+  const [sugestoes, setSugestoes] = useState<string[]>([]);
+  const [erro, setErro] = useState('');
+  const [editando, setEditando] = useState<string | null>(null); // "material|acabamento"
+  const [novoNome, setNovoNome] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  function carregar() {
+    getAdesivoStatus()
+      .then(r => { setCombos(r.combos); setSugestoes(r.sugestoes); })
+      .catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar status do Adesivo.'));
+  }
+
+  useEffect(carregar, []);
+
+  async function salvar(material: string, acabamento: string) {
+    if (!novoNome.trim()) return;
+    setSalvando(true);
+    try {
+      await corrigirNomeAdesivo(material, acabamento, novoNome.trim());
+      setEditando(null);
+      carregar();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro ao corrigir nome.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  const foraDeSincronia = combos?.filter(c => !c.sincronizado) ?? [];
+
+  return (
+    <div className="adm-panel" style={{ marginTop: 20 }}>
+      <h2>Preço do configurador de Adesivo</h2>
+      <p className="sub">
+        Preço puxado do ERP casando pelo nome exato do produto — igual os simples, mas em formato de calculadora
+        (Material × Acabamento). Se um nome mudar lá, a loja mantém o último preço bom e avisa aqui.
+      </p>
+
+      {erro ? (
+        <div className="adm-empty">{erro}</div>
+      ) : !combos ? (
+        <div className="adm-empty">Carregando…</div>
+      ) : (
+        <>
+          {foraDeSincronia.length > 0 && (
+            <div className="adm-hint" style={{ borderColor: 'var(--blush-deep)', marginBottom: 16 }}>
+              ⚠️ {foraDeSincronia.length} combinaç{foraDeSincronia.length > 1 ? 'ões' : 'ão'} não {foraDeSincronia.length > 1 ? 'foram encontradas' : 'foi encontrada'} no ERP
+              na última tentativa — a loja está usando o último preço conhecido (não quebrou pro cliente).
+              {sugestoes.length > 0 && (
+                <> Nomes parecidos no ERP agora: {sugestoes.map((s, i) => <span key={s}><b>"{s}"</b>{i < sugestoes.length - 1 ? ', ' : ''}</span>)}.</>
+              )}
+            </div>
+          )}
+          <table className="adm-table">
+            <thead>
+              <tr><th>Material</th><th>Acabamento</th><th>Preço</th><th>Nome esperado no ERP</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {combos.map(c => {
+                const key = `${c.material}|${c.acabamento}`;
+                return (
+                  <tr key={key}>
+                    <td>{c.material}</td>
+                    <td>{c.acabamento}</td>
+                    <td>{c.preco != null ? fmt(c.preco) : '—'}</td>
+                    <td>
+                      {editando === key ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input value={novoNome} onChange={e => setNovoNome(e.target.value)}
+                            style={{ height: 32, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 8px', fontSize: 12.5, flex: 1 }} />
+                          <button className="adm-link-btn" style={{ margin: 0 }} disabled={salvando} onClick={() => salvar(c.material, c.acabamento)}>
+                            {salvando ? '...' : 'Salvar'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{c.erp_nome_esperado}</span>
+                      )}
+                    </td>
+                    <td>
+                      {c.sincronizado ? (
+                        <span style={{ color: 'var(--violet-deep)', fontWeight: 700, fontSize: 12.5 }}>✓ ok</span>
+                      ) : editando === key ? null : (
+                        <button className="adm-link-btn" style={{ color: 'var(--blush-deep)', margin: 0 }}
+                          onClick={() => { setEditando(key); setNovoNome(c.erp_nome_esperado); }}>
+                          ⚠️ corrigir nome
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
   );
 }
