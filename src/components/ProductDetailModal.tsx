@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { SimpleProduct } from '../data';
 import { fmt } from '../data';
-import { CategoryIcon } from '../icons';
+import { CategoryIcon, WhatsAppIcon } from '../icons';
+import { whatsappLink } from '../config';
 
 // Janela de detalhes de um produto simples (Caneca, Cavalete, etc.) — abre
 // ao clicar no card, em vez de adicionar direto ao pedido. Se o produto tiver
@@ -10,10 +11,12 @@ export default function ProductDetailModal({
   produto,
   onClose,
   onAdd,
+  whatsapp,
 }: {
   produto: SimpleProduct | null;
   onClose: () => void;
   onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string) => void;
+  whatsapp: string;
 }) {
   const [corSelecionada, setCorSelecionada] = useState<string | null>(null);
   const [quantidade, setQuantidade] = useState(1);
@@ -28,11 +31,14 @@ export default function ProductDetailModal({
   }, [produto]);
 
   const open = produto != null;
+  const nomeComCor = produto?.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto?.nome ?? '';
+  const mensagemWhats = produto
+    ? `Olá! Quero pedir: ${nomeComCor}${quantidade > 1 ? ` — ${quantidade} un` : ''} — ${fmt(produto.preco * quantidade)}${observacao ? `\nObs: ${observacao}` : ''}`
+    : '';
 
   function adicionar() {
     if (!produto) return;
-    const nome = produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome;
-    onAdd(nome, produto.preco, quantidade, observacao);
+    onAdd(nomeComCor, produto.preco, quantidade, observacao);
     onClose();
   }
 
@@ -53,7 +59,15 @@ export default function ProductDetailModal({
           </div>
 
           <h2 className="serif">{produto.nome}</h2>
-          {produto.descricao && <p className="modal-sub" style={{ marginBottom: 16 }}>{produto.descricao}</p>}
+          {produto.descricao && <p className="modal-sub" style={{ marginBottom: produto.especificacoes?.length ? 8 : 16 }}>{produto.descricao}</p>}
+
+          {produto.especificacoes?.length ? (
+            <ul className="detail-specs">
+              {produto.especificacoes.map((e, i) => (
+                <li key={i}><b>{e.chave}:</b> {e.valor}</li>
+              ))}
+            </ul>
+          ) : null}
 
           {produto.cores?.length ? (
             <div className="field-group">
@@ -102,7 +116,14 @@ export default function ProductDetailModal({
           </div>
 
           <div className="modal-actions">
-            <button className="add-btn" onClick={adicionar}>Adicionar ao pedido</button>
+            <button className="add-btn btn-flex" onClick={adicionar}>Adicionar ao pedido</button>
+            <a
+              className="btn-outline-full btn-flex" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
+              href={whatsappLink(whatsapp, mensagemWhats)}
+              target="_blank" rel="noopener noreferrer"
+            >
+              <WhatsAppIcon /> Comprar pelo WhatsApp
+            </a>
           </div>
         </div>
       )}

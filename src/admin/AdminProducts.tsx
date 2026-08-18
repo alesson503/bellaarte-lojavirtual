@@ -23,6 +23,7 @@ export default function AdminProducts() {
   const [editandoDetalhes, setEditandoDetalhes] = useState<string | null>(null);
   const [descricaoValor, setDescricaoValor] = useState('');
   const [coresValor, setCoresValor] = useState('');
+  const [especificacoesValor, setEspecificacoesValor] = useState('');
   const [salvandoDetalhes, setSalvandoDetalhes] = useState<string | null>(null);
 
   function carregar() {
@@ -96,7 +97,16 @@ export default function AdminProducts() {
     setSalvandoDetalhes(id);
     try {
       const cores = coresValor.split(',').map(c => c.trim()).filter(Boolean);
-      await atualizarDetalhesProduto(id, descricaoValor.trim(), cores);
+      const especificacoes = especificacoesValor.split('\n')
+        .map(linha => {
+          const i = linha.indexOf(':');
+          if (i < 0) return null;
+          const chave = linha.slice(0, i).trim();
+          const valor = linha.slice(i + 1).trim();
+          return chave && valor ? { chave, valor } : null;
+        })
+        .filter((e): e is { chave: string; valor: string } => e != null);
+      await atualizarDetalhesProduto(id, descricaoValor.trim(), cores, especificacoes);
       setEditandoDetalhes(null);
       carregar();
     } catch (e) {
@@ -172,24 +182,37 @@ export default function AdminProducts() {
                   </td>
                   <td>
                     {editandoDetalhes === p.id ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240 }}>
                         <textarea value={descricaoValor} onChange={e => setDescricaoValor(e.target.value)} placeholder="Descrição do produto"
                           rows={2} style={{ borderRadius: 8, border: '1.5px solid var(--line)', padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit', resize: 'vertical' }} />
                         <input value={coresValor} onChange={e => setCoresValor(e.target.value)} placeholder="Cores, separadas por vírgula"
                           style={{ height: 32, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 8px', fontSize: 12.5 }} />
+                        <textarea value={especificacoesValor} onChange={e => setEspecificacoesValor(e.target.value)}
+                          placeholder={'Especificações, uma por linha:\nFormato: 9,7×20,5cm\nMaterial: Porcelana'}
+                          rows={4} style={{ borderRadius: 8, border: '1.5px solid var(--line)', padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit', resize: 'vertical' }} />
                         <button className="adm-link-btn" style={{ margin: 0, alignSelf: 'flex-start' }} disabled={salvandoDetalhes === p.id} onClick={() => salvarDetalhes(p.id)}>
                           {salvandoDetalhes === p.id ? 'Salvando…' : 'Salvar'}
                         </button>
                       </div>
                     ) : (
-                      <div style={{ maxWidth: 220 }}>
+                      <div style={{ maxWidth: 240 }}>
                         {p.descricao && <div style={{ fontSize: 12, color: 'var(--graphite)', marginBottom: 4 }}>{p.descricao}</div>}
                         {p.cores?.length ? (
                           <div style={{ fontSize: 11.5, color: 'var(--graphite-faint)', marginBottom: 4 }}>Cores: {p.cores.join(', ')}</div>
                         ) : null}
+                        {p.especificacoes?.length ? (
+                          <div style={{ fontSize: 11.5, color: 'var(--graphite-faint)', marginBottom: 4 }}>
+                            {p.especificacoes.map(e => `${e.chave}: ${e.valor}`).join(' · ')}
+                          </div>
+                        ) : null}
                         <button className="adm-link-btn" style={{ margin: 0 }}
-                          onClick={() => { setEditandoDetalhes(p.id); setDescricaoValor(p.descricao || ''); setCoresValor((p.cores || []).join(', ')); }}>
-                          {p.descricao || p.cores?.length ? 'Editar detalhes' : 'Adicionar descrição/cores'}
+                          onClick={() => {
+                            setEditandoDetalhes(p.id);
+                            setDescricaoValor(p.descricao || '');
+                            setCoresValor((p.cores || []).join(', '));
+                            setEspecificacoesValor((p.especificacoes || []).map(e => `${e.chave}: ${e.valor}`).join('\n'));
+                          }}>
+                          {p.descricao || p.cores?.length || p.especificacoes?.length ? 'Editar detalhes' : 'Adicionar descrição/cores'}
                         </button>
                       </div>
                     )}

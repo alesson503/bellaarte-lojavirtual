@@ -50,6 +50,7 @@ export interface SimpleProduct {
   descontoPercentual?: number;
   descricao?: string;
   cores?: string[];
+  especificacoes?: { chave: string; valor: string }[];
 }
 
 export type Produto = LinkProduct | MultiProduct | MedidaProduct | SimpleProduct;

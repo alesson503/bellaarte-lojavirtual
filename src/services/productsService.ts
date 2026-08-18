@@ -39,6 +39,7 @@ export interface LojaProduto {
   imagem_url: string | null;
   descricao: string | null;
   cores: string[];
+  especificacoes: { chave: string; valor: string }[];
 }
 
 export async function listLojaProducts(): Promise<LojaProduto[]> {
@@ -58,11 +59,13 @@ export async function atualizarDescontoProduto(id: string, desconto: number | nu
   if (!res.ok) throw new Error(data.error || 'Erro ao salvar desconto.');
 }
 
-export async function atualizarDetalhesProduto(id: string, descricao: string, cores: string[]): Promise<void> {
+export async function atualizarDetalhesProduto(
+  id: string, descricao: string, cores: string[], especificacoes: { chave: string; valor: string }[],
+): Promise<void> {
   const res = await fetch(`${API_URL}/api/produtos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify({ descricao, cores }),
+    body: JSON.stringify({ descricao, cores, especificacoes }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erro ao salvar os detalhes.');

@@ -222,7 +222,7 @@ export default function StoreApp() {
       )}
 
       {page === 'produtos' && (
-        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onGoPersonalize={id => goPage('personalize', id)} />
+        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onGoPersonalize={id => goPage('personalize', id)} whatsapp={whatsapp} />
       )}
 
       {page === 'contato' && (

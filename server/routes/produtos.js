@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url, desconto_percentual, descricao, cores FROM produtos WHERE ativo = true ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true ORDER BY categoria, nome'
     );
     const { rows: promoRows } = await pool.query(
       `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes
@@ -140,12 +140,13 @@ router.post('/sincronizar', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { nome, categoria, preco, unidade, descricao, cores } = req.body || {};
+    const { nome, categoria, preco, unidade, descricao, cores, especificacoes } = req.body || {};
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório.' });
     if (preco == null || Number(preco) < 0) return res.status(400).json({ error: 'Preço inválido.' });
     const { rows } = await pool.query(
-      `INSERT INTO produtos (nome, categoria, preco, unidade, descricao, cores) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [String(nome).trim(), categoria || 'Outros', Number(preco), unidade || null, descricao?.trim() || null, Array.isArray(cores) ? cores : []]
+      `INSERT INTO produtos (nome, categoria, preco, unidade, descricao, cores, especificacoes) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb) RETURNING *`,
+      [String(nome).trim(), categoria || 'Outros', Number(preco), unidade || null, descricao?.trim() || null,
+       Array.isArray(cores) ? cores : [], JSON.stringify(Array.isArray(especificacoes) ? especificacoes : [])]
     );
     res.status(201).json({ produto: rows[0] });
   } catch (e) {
@@ -156,7 +157,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { nome, categoria, preco, unidade, ativo, desconto_percentual, descricao, cores } = req.body || {};
+    const { nome, categoria, preco, unidade, ativo, desconto_percentual, descricao, cores, especificacoes } = req.body || {};
     if (desconto_percentual != null && !(Number(desconto_percentual) >= 0 && Number(desconto_percentual) <= 100)) {
       return res.status(400).json({ error: 'Desconto precisa ser entre 0 e 100.' });
     }
@@ -170,11 +171,13 @@ router.put('/:id', async (req, res) => {
          desconto_percentual = CASE WHEN $7::text IS NULL THEN desconto_percentual ELSE NULLIF($7, '')::numeric END,
          descricao = COALESCE($8, descricao),
          cores = COALESCE($9::text[], cores),
+         especificacoes = COALESCE($10::jsonb, especificacoes),
          atualizado_em = now()
        WHERE id = $1 RETURNING *`,
       [req.params.id, nome ?? null, categoria ?? null, preco ?? null, unidade ?? null, ativo ?? null,
        desconto_percentual === undefined ? null : String(desconto_percentual),
-       descricao ?? null, Array.isArray(cores) ? cores : null]
+       descricao ?? null, Array.isArray(cores) ? cores : null,
+       Array.isArray(especificacoes) ? JSON.stringify(especificacoes) : null]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });
     res.json({ produto: rows[0] });

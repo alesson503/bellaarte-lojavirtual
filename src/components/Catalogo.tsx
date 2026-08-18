@@ -9,10 +9,12 @@ export default function Catalogo({
   onAdd,
   onGoPersonalize,
   filtroInicial,
+  whatsapp,
 }: {
   onAdd: (nome: string, preco: number) => void;
   onGoPersonalize: (scrollToId: 'adesivos' | 'cartoes') => void;
   filtroInicial: string;
+  whatsapp: string;
 }) {
   const [filtro, setFiltro] = useState(filtroInicial);
   const [busca, setBusca] = useState('');
@@ -36,6 +38,7 @@ export default function Catalogo({
           descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
           descricao: p.descricao ?? undefined,
           cores: p.cores?.length ? p.cores : undefined,
+          especificacoes: p.especificacoes?.length ? p.especificacoes : undefined,
         })));
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });
@@ -100,7 +103,7 @@ export default function Catalogo({
           )}
         </div>
       </div>
-      <ProductDetailModal produto={detalhe} onClose={() => setDetalhe(null)} onAdd={onAdd} />
+      <ProductDetailModal produto={detalhe} onClose={() => setDetalhe(null)} onAdd={onAdd} whatsapp={whatsapp} />
     </section>
   );
 }

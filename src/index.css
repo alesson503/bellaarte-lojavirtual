@@ -237,6 +237,10 @@ section { padding: 68px 0; }
 }
 .qty-stepper button:hover { border-color: var(--violet); color: var(--violet); }
 .qty-stepper span { font-size: 15px; font-weight: 800; min-width: 20px; text-align: center; }
+.detail-specs { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 5px; }
+.detail-specs li { font-size: 12.5px; color: var(--graphite); padding-left: 16px; position: relative; }
+.detail-specs li::before { content: '›'; position: absolute; left: 0; color: var(--violet); font-weight: 800; }
+.detail-specs li b { color: var(--ink); font-weight: 700; }
 .prod-thumb {
   aspect-ratio: 16/10; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
   display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;

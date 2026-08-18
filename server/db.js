@@ -52,6 +52,11 @@ async function migrate() {
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS descricao TEXT;
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS cores TEXT[] NOT NULL DEFAULT '{}';
 
+    -- Especificações do produto (Formato, Material, Revestimento, Produção...)
+    -- lista de {chave, valor}, na ordem que o admin cadastrou. Mesma regra:
+    -- só existe na loja, sync do ERP nunca mexe.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS especificacoes JSONB NOT NULL DEFAULT '[]';
+
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nome        TEXT NOT NULL,
