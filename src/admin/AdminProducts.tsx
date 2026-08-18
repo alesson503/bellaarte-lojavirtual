@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   listErpProducts, listLojaProducts, sincronizarProdutosErp,
-  getAdesivoStatus, corrigirNomeAdesivo,
+  getAdesivoStatus, corrigirNomeAdesivo, uploadImagemProduto, removerImagemProduto,
   type ErpProduto, type LojaProduto, type AdesivoCombo,
 } from '../services/productsService';
+import { imageToDataUrl } from '../lib/imageToDataUrl';
 import { fmt } from '../data';
 
 export default function AdminProducts() {
@@ -12,6 +13,9 @@ export default function AdminProducts() {
   const [erro, setErro] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
   const [msg, setMsg] = useState('');
+  const [enviandoFoto, setEnviandoFoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const alvoUploadRef = useRef<string | null>(null);
 
   function carregar() {
     listLojaProducts().then(setLojaProdutos).catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar produtos da loja.'));
@@ -34,6 +38,38 @@ export default function AdminProducts() {
     }
   }
 
+  function pedirFoto(id: string) {
+    alvoUploadRef.current = id;
+    fileInputRef.current?.click();
+  }
+
+  async function onArquivoEscolhido(file: File | null) {
+    const id = alvoUploadRef.current;
+    if (!file || !id) return;
+    setEnviandoFoto(id);
+    try {
+      const dataUrl = await imageToDataUrl(file, 600, 'image/jpeg', 0.85);
+      await uploadImagemProduto(id, dataUrl);
+      carregar();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível enviar essa imagem.');
+    } finally {
+      setEnviandoFoto(null);
+    }
+  }
+
+  async function tirarFoto(id: string) {
+    setEnviandoFoto(id);
+    try {
+      await removerImagemProduto(id);
+      carregar();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível remover a foto.');
+    } finally {
+      setEnviandoFoto(null);
+    }
+  }
+
   return (
     <>
       <div className="adm-panel" style={{ marginBottom: 20 }}>
@@ -51,6 +87,9 @@ export default function AdminProducts() {
         </div>
         {msg && <p style={{ fontSize: 12.5, color: 'var(--violet-deep)', marginTop: 10 }}>{msg}</p>}
 
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => onArquivoEscolhido(e.target.files?.[0] ?? null)} />
+
         {erro ? (
           <div className="adm-empty">{erro}</div>
         ) : !lojaProdutos ? (
@@ -60,14 +99,37 @@ export default function AdminProducts() {
         ) : (
           <table className="adm-table" style={{ marginTop: 16 }}>
             <thead>
-              <tr><th>Nome</th><th>Categoria</th><th>Preço</th></tr>
+              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th></th></tr>
             </thead>
             <tbody>
               {lojaProdutos.map(p => (
                 <tr key={p.id}>
+                  <td>
+                    {p.imagem_url ? (
+                      <img src={p.imagem_url} alt={p.nome} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)' }} />
+                    )}
+                  </td>
                   <td><b>{p.nome}</b></td>
                   <td>{p.categoria}</td>
                   <td>{fmt(p.preco)}{p.unidade && <small> /{p.unidade}</small>}</td>
+                  <td>
+                    {enviandoFoto === p.id ? (
+                      <span style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>...</span>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="adm-link-btn" style={{ margin: 0 }} onClick={() => pedirFoto(p.id)}>
+                          {p.imagem_url ? 'Trocar foto' : 'Subir foto'}
+                        </button>
+                        {p.imagem_url && (
+                          <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={() => tirarFoto(p.id)}>
+                            Remover
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -85,11 +147,16 @@ export default function AdminProducts() {
         ) : (
           <table className="adm-table">
             <thead>
-              <tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Unidade</th></tr>
+              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Unidade</th></tr>
             </thead>
             <tbody>
               {erpProdutos.map(p => (
                 <tr key={p.id}>
+                  <td>
+                    {p.foto_url ? (
+                      <img src={p.foto_url} alt={p.nome} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+                    ) : '—'}
+                  </td>
                   <td><b>{p.nome}</b></td>
                   <td>{p.categoria}</td>
                   <td>{fmt(p.preco)}</td>

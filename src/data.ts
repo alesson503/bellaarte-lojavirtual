@@ -45,6 +45,7 @@ export interface SimpleProduct {
   categoria: Categoria;
   preco: number;
   unidade?: string;
+  imagem?: string;
 }
 
 export type Produto = LinkProduct | MultiProduct | MedidaProduct | SimpleProduct;

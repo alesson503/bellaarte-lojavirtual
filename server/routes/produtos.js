@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo FROM produtos WHERE ativo = true ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, imagem_url FROM produtos WHERE ativo = true ORDER BY categoria, nome'
     );
     res.json({ produtos: rows });
   } catch (e) {
@@ -168,6 +168,32 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   await pool.query('DELETE FROM produtos WHERE id = $1', [req.params.id]);
   res.status(204).end();
+});
+
+// PUT /api/produtos/:id/imagem — upload manual (marca imagem_origem='manual',
+// a sincronização automática nunca mais sobrescreve essa foto).
+router.put('/:id/imagem', async (req, res) => {
+  const { imagem } = req.body || {};
+  if (!imagem?.trim()) return res.status(400).json({ error: 'Imagem é obrigatória.' });
+  const { rows } = await pool.query(
+    `UPDATE produtos SET imagem_url = $2, imagem_origem = 'manual', atualizado_em = now()
+     WHERE id = $1 RETURNING id, imagem_url, imagem_origem`,
+    [req.params.id, imagem]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });
+  res.json({ produto: rows[0] });
+});
+
+// DELETE /api/produtos/:id/imagem — remove a foto manual e volta a deixar a
+// sincronização usar a foto do ERP (se existir) na próxima vez.
+router.delete('/:id/imagem', async (req, res) => {
+  const { rows } = await pool.query(
+    `UPDATE produtos SET imagem_url = NULL, imagem_origem = 'nenhuma', atualizado_em = now()
+     WHERE id = $1 RETURNING id, imagem_url, imagem_origem`,
+    [req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });
+  res.json({ produto: rows[0] });
 });
 
 module.exports = router;

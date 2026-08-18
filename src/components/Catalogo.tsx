@@ -29,6 +29,7 @@ export default function Catalogo({
           categoria: p.categoria as Categoria,
           preco: p.preco,
           unidade: p.unidade ?? undefined,
+          imagem: p.imagem_url ?? undefined,
         })));
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });

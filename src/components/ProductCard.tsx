@@ -45,7 +45,11 @@ export default function ProductCard({
     <div className="prod-card">
       <div className="prod-thumb">
         <span className="cat-tag">{produto.categoria}</span>
-        <CategoryIcon categoria={produto.categoria} />
+        {produto.imagem ? (
+          <img src={produto.imagem} alt={produto.nome} className="prod-thumb-img" />
+        ) : (
+          <CategoryIcon categoria={produto.categoria} />
+        )}
       </div>
       <div className="prod-body">
         <b className="name">{produto.nome}</b>

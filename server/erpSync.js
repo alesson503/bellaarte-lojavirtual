@@ -27,18 +27,25 @@ async function syncProdutosFromErp() {
   if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou a busca de produtos.');
   const todosDoErp = erpData.produtos || [];
 
-  // 1) Produtos simples
+  // 1) Produtos simples (foto do ERP só entra se ninguém subiu uma manual
+  // aqui na loja antes — ver imagem_origem).
   const simples = todosDoErp.filter(p => !ehConfiguravel(p));
   const vistosErpIds = [];
   for (const p of simples) {
     vistosErpIds.push(p.erp_id ?? p.id);
     await pool.query(
-      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id)
-       VALUES ($1, $2, $3, $4, true, 'erp', $5)
+      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, imagem_origem)
+       VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END)
        ON CONFLICT (erp_id) DO UPDATE SET
          nome = EXCLUDED.nome, categoria = EXCLUDED.categoria, preco = EXCLUDED.preco,
-         unidade = EXCLUDED.unidade, ativo = true, atualizado_em = now()`,
-      [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : null, p.id]
+         unidade = EXCLUDED.unidade, ativo = true, atualizado_em = now(),
+         imagem_url = CASE WHEN produtos.imagem_origem = 'manual' THEN produtos.imagem_url ELSE EXCLUDED.imagem_url END,
+         imagem_origem = CASE
+           WHEN produtos.imagem_origem = 'manual' THEN 'manual'
+           WHEN EXCLUDED.imagem_url IS NOT NULL THEN 'erp'
+           ELSE 'nenhuma'
+         END`,
+      [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : null, p.id, p.foto_url || null]
     );
   }
   if (vistosErpIds.length) {

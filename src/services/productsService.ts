@@ -7,6 +7,7 @@ export interface ErpProduto {
   categoria: string;
   preco: number;
   unidade_venda: 'un' | 'm2';
+  foto_url?: string | null;
 }
 
 export async function listErpProducts(): Promise<ErpProduto[]> {
@@ -33,6 +34,7 @@ export interface LojaProduto {
   preco: number;
   unidade: string | null;
   ativo: boolean;
+  imagem_url: string | null;
 }
 
 export async function listLojaProducts(): Promise<LojaProduto[]> {
@@ -40,6 +42,24 @@ export async function listLojaProducts(): Promise<LojaProduto[]> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erro ao buscar produtos.');
   return data.produtos;
+}
+
+export async function uploadImagemProduto(id: string, imagemDataUrl: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/produtos/${id}/imagem`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ imagem: imagemDataUrl }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao enviar imagem.');
+}
+
+export async function removerImagemProduto(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/produtos/${id}/imagem`, { method: 'DELETE', headers: authHeader() });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Erro ao remover imagem.');
+  }
 }
 
 // Preço do configurador de Adesivo — vem do banco (sincronizado do ERP por

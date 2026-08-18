@@ -36,6 +36,12 @@ async function migrate() {
     -- não existir, sem afetar nenhum produto já cadastrado manualmente.
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_id TEXT UNIQUE;
 
+    -- Foto do produto: pode vir do ERP (imagem_origem='erp', atualiza sozinha
+    -- na sincronização) ou ser subida manual na loja (imagem_origem='manual',
+    -- a sincronização NUNCA sobrescreve essa).
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagem_url TEXT;
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS imagem_origem TEXT NOT NULL DEFAULT 'nenhuma';
+
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nome        TEXT NOT NULL,
