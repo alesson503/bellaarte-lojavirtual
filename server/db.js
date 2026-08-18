@@ -50,7 +50,28 @@ async function migrate() {
     -- isso), preenchidas manualmente pelo admin — igual a foto manual, a
     -- sincronização automática nunca sobrescreve.
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS descricao TEXT;
-    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS cores TEXT[] NOT NULL DEFAULT '{}';
+
+    -- Cores: cada uma agora pode ter uma foto própria (ex: caneca azul mostra
+    -- a foto da caneca azul quando o cliente escolhe essa cor). Instalação
+    -- nova já nasce em jsonb; instalação antiga (cores como TEXT[] simples)
+    -- é convertida abaixo, preservando os nomes já cadastrados.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS cores JSONB NOT NULL DEFAULT '[]';
+
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'produtos' AND column_name = 'cores' AND data_type = 'ARRAY'
+      ) THEN
+        ALTER TABLE produtos RENAME COLUMN cores TO cores_old_textarray;
+        ALTER TABLE produtos ADD COLUMN cores JSONB NOT NULL DEFAULT '[]';
+        UPDATE produtos SET cores = (
+          SELECT COALESCE(jsonb_agg(jsonb_build_object('nome', c, 'foto', NULL)), '[]'::jsonb)
+          FROM unnest(cores_old_textarray) AS c
+        );
+        ALTER TABLE produtos DROP COLUMN cores_old_textarray;
+      END IF;
+    END $$;
 
     -- Especificações do produto (Formato, Material, Revestimento, Produção...)
     -- lista de {chave, valor}, na ordem que o admin cadastrou. Mesma regra:

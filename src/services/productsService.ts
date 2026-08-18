@@ -39,7 +39,7 @@ export interface LojaProduto {
   origem: string;
   imagem_url: string | null;
   descricao: string | null;
-  cores: string[];
+  cores: { nome: string; foto: string | null }[];
   especificacoes: { chave: string; valor: string }[];
 }
 
@@ -56,7 +56,7 @@ export async function listLojaProducts(): Promise<LojaProduto[]> {
 export async function atualizarProdutoLoja(id: string, dados: {
   desconto_percentual: number | null;
   descricao: string;
-  cores: string[];
+  cores: { nome: string; foto: string | null }[];
   especificacoes: { chave: string; valor: string }[];
 }): Promise<void> {
   const res = await fetch(`${API_URL}/api/produtos/${id}`, {

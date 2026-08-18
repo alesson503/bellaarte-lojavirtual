@@ -18,23 +18,56 @@ export default function EditarProdutoModal({
   const [imagemUrl, setImagemUrl] = useState<string | null>(null);
   const [descontoValor, setDescontoValor] = useState('');
   const [descricaoValor, setDescricaoValor] = useState('');
-  const [coresValor, setCoresValor] = useState('');
+  const [cores, setCores] = useState<{ nome: string; foto: string | null }[]>([]);
   const [especificacoesValor, setEspecificacoesValor] = useState('');
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [enviandoFotoCor, setEnviandoFotoCor] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const corFileInputRef = useRef<HTMLInputElement>(null);
+  const corAlvoIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
     setImagemUrl(produto?.imagem_url ?? null);
     setDescontoValor(produto && produto.desconto_percentual > 0 ? String(produto.desconto_percentual) : '');
     setDescricaoValor(produto?.descricao || '');
-    setCoresValor((produto?.cores || []).join(', '));
+    setCores((produto?.cores || []).map(c => ({ nome: c.nome, foto: c.foto })));
     setEspecificacoesValor((produto?.especificacoes || []).map(e => `${e.chave}: ${e.valor}`).join('\n'));
     setErro('');
   }, [produto]);
 
   const open = produto != null;
+
+  function addCor() {
+    setCores(prev => [...prev, { nome: '', foto: null }]);
+  }
+  function renomearCor(i: number, nome: string) {
+    setCores(prev => prev.map((c, idx) => (idx === i ? { ...c, nome } : c)));
+  }
+  function removerCor(i: number) {
+    setCores(prev => prev.filter((_, idx) => idx !== i));
+  }
+  function pedirFotoCor(i: number) {
+    corAlvoIndexRef.current = i;
+    corFileInputRef.current?.click();
+  }
+  async function onFotoCorEscolhida(file: File | null) {
+    const i = corAlvoIndexRef.current;
+    if (!file || i == null) return;
+    setEnviandoFotoCor(i);
+    try {
+      const dataUrl = await imageToDataUrl(file, 500, 'image/jpeg', 0.85);
+      setCores(prev => prev.map((c, idx) => (idx === i ? { ...c, foto: dataUrl } : c)));
+    } catch {
+      alert('Não foi possível processar essa imagem.');
+    } finally {
+      setEnviandoFotoCor(null);
+    }
+  }
+  function removerFotoCor(i: number) {
+    setCores(prev => prev.map((c, idx) => (idx === i ? { ...c, foto: null } : c)));
+  }
 
   async function onArquivoEscolhido(file: File | null) {
     if (!file || !produto) return;
@@ -70,7 +103,7 @@ export default function EditarProdutoModal({
     setErro('');
     setSalvando(true);
     try {
-      const cores = coresValor.split(',').map(c => c.trim()).filter(Boolean);
+      const coresValidas = cores.map(c => ({ nome: c.nome.trim(), foto: c.foto })).filter(c => c.nome);
       const especificacoes = especificacoesValor.split('\n')
         .map(linha => {
           const i = linha.indexOf(':');
@@ -83,7 +116,7 @@ export default function EditarProdutoModal({
       await atualizarProdutoLoja(produto.id, {
         desconto_percentual: descontoValor.trim() === '' ? null : Number(descontoValor),
         descricao: descricaoValor.trim(),
-        cores,
+        cores: coresValidas,
         especificacoes,
       });
       onChanged();
@@ -148,7 +181,40 @@ export default function EditarProdutoModal({
 
           <div className="field-group">
             <label>Cores disponíveis</label>
-            <input value={coresValor} onChange={e => setCoresValor(e.target.value)} placeholder="Ex.: Branca, Rosa, Azul (deixe em branco se não tiver cor)" />
+            <p className="sub" style={{ margin: '0 0 10px' }}>
+              Cada cor pode ter sua própria foto — se não subir uma, o cliente vê a foto principal do produto.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {cores.map((c, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {c.foto ? (
+                    <img src={c.foto} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)', flexShrink: 0 }} />
+                  )}
+                  <input value={c.nome} onChange={e => renomearCor(i, e.target.value)} placeholder="Nome da cor"
+                    style={{ flex: 1, height: 36, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 10px', fontSize: 12.5 }} />
+                  {enviandoFotoCor === i ? (
+                    <span style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>...</span>
+                  ) : (
+                    <>
+                      <button className="adm-link-btn" style={{ margin: 0, whiteSpace: 'nowrap' }} onClick={() => pedirFotoCor(i)}>
+                        {c.foto ? 'Trocar foto' : 'Foto'}
+                      </button>
+                      {c.foto && (
+                        <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)', whiteSpace: 'nowrap' }} onClick={() => removerFotoCor(i)}>
+                          Remover foto
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={() => removerCor(i)}>✕</button>
+                </div>
+              ))}
+            </div>
+            <button className="adm-link-btn" style={{ marginTop: cores.length ? 10 : 0 }} onClick={addCor}>+ Adicionar cor</button>
+            <input ref={corFileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={e => onFotoCorEscolhida(e.target.files?.[0] ?? null)} />
           </div>
 
           <div className="field-group">

@@ -25,12 +25,14 @@ export default function ProductDetailModal({
   // Toda vez que um produto novo é aberto, volta tudo pro estado inicial —
   // já pré-seleciona a primeira cor (se tiver), o cliente ainda pode trocar.
   useEffect(() => {
-    setCorSelecionada(produto?.cores?.[0] ?? null);
+    setCorSelecionada(produto?.cores?.[0]?.nome ?? null);
     setQuantidade(1);
     setObservacao('');
   }, [produto]);
 
   const open = produto != null;
+  const corObj = produto?.cores?.find(c => c.nome === corSelecionada) ?? null;
+  const fotoExibida = corObj?.foto || produto?.imagem;
   const nomeComCor = produto?.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto?.nome ?? '';
   const mensagemWhats = produto
     ? `Olá! Quero pedir: ${nomeComCor}${quantidade > 1 ? ` — ${quantidade} un` : ''} — ${fmt(produto.preco * quantidade)}${observacao ? `\nObs: ${observacao}` : ''}`
@@ -51,8 +53,8 @@ export default function ProductDetailModal({
           <div className="detail-thumb">
             <span className="cat-tag">{produto.categoria}</span>
             {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
-            {produto.imagem ? (
-              <img src={produto.imagem} alt={produto.nome} className="prod-thumb-img" />
+            {fotoExibida ? (
+              <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
             ) : (
               <CategoryIcon categoria={produto.categoria} />
             )}
@@ -75,11 +77,12 @@ export default function ProductDetailModal({
               <div className="swatch-row">
                 {produto.cores.map(cor => (
                   <button
-                    key={cor}
-                    className={`swatch ${corSelecionada === cor ? 'on' : ''}`}
-                    onClick={() => setCorSelecionada(cor)}
+                    key={cor.nome}
+                    className={`swatch ${corSelecionada === cor.nome ? 'on' : ''}`}
+                    onClick={() => setCorSelecionada(cor.nome)}
                   >
-                    {cor}
+                    {cor.foto && <img src={cor.foto} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
+                    {cor.nome}
                   </button>
                 ))}
               </div>

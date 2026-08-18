@@ -5,6 +5,15 @@ const { syncProdutosFromErp, nomesAdesivoNaoUsados } = require('../erpSync');
 
 const router = express.Router();
 
+// Normaliza a lista de cores vinda do admin: cada uma vira {nome, foto},
+// descarta lixo (nome vazio) e evita salvar campos extras não previstos.
+function sanitizarCores(cores) {
+  if (!Array.isArray(cores)) return [];
+  return cores
+    .map(c => ({ nome: String(c?.nome ?? '').trim(), foto: typeof c?.foto === 'string' && c.foto ? c.foto : null }))
+    .filter(c => c.nome);
+}
+
 // GET /api/produtos — público, qualquer visitante da loja pode ver.
 // "preco" já vem com desconto aplicado (o maior entre o desconto do produto
 // e a promoção geral ativa); "preco_original" é o valor cheio, pra riscar.
@@ -144,9 +153,9 @@ router.post('/', async (req, res) => {
     if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório.' });
     if (preco == null || Number(preco) < 0) return res.status(400).json({ error: 'Preço inválido.' });
     const { rows } = await pool.query(
-      `INSERT INTO produtos (nome, categoria, preco, unidade, descricao, cores, especificacoes) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb) RETURNING *`,
+      `INSERT INTO produtos (nome, categoria, preco, unidade, descricao, cores, especificacoes) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb) RETURNING *`,
       [String(nome).trim(), categoria || 'Outros', Number(preco), unidade || null, descricao?.trim() || null,
-       Array.isArray(cores) ? cores : [], JSON.stringify(Array.isArray(especificacoes) ? especificacoes : [])]
+       JSON.stringify(sanitizarCores(cores)), JSON.stringify(Array.isArray(especificacoes) ? especificacoes : [])]
     );
     res.status(201).json({ produto: rows[0] });
   } catch (e) {
@@ -170,13 +179,13 @@ router.put('/:id', async (req, res) => {
          ativo = COALESCE($6, ativo),
          desconto_percentual = CASE WHEN $7::text IS NULL THEN desconto_percentual ELSE NULLIF($7, '')::numeric END,
          descricao = COALESCE($8, descricao),
-         cores = COALESCE($9::text[], cores),
+         cores = COALESCE($9::jsonb, cores),
          especificacoes = COALESCE($10::jsonb, especificacoes),
          atualizado_em = now()
        WHERE id = $1 RETURNING *`,
       [req.params.id, nome ?? null, categoria ?? null, preco ?? null, unidade ?? null, ativo ?? null,
        desconto_percentual === undefined ? null : String(desconto_percentual),
-       descricao ?? null, Array.isArray(cores) ? cores : null,
+       descricao ?? null, Array.isArray(cores) ? JSON.stringify(sanitizarCores(cores)) : null,
        Array.isArray(especificacoes) ? JSON.stringify(especificacoes) : null]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });

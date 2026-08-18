@@ -49,7 +49,7 @@ export interface SimpleProduct {
   precoOriginal?: number;
   descontoPercentual?: number;
   descricao?: string;
-  cores?: string[];
+  cores?: { nome: string; foto: string | null }[];
   especificacoes?: { chave: string; valor: string }[];
 }
 
