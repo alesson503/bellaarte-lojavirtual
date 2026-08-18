@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { useAuth } from '../auth/AuthContext';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
 import { trocarSenha } from '../auth/authService';
+import { getConfig, setConfig } from '../services/configService';
 import logoDefault from '../assets/logo.png';
 import heroDefault from '../assets/hero-canecas.jpg';
 
@@ -39,12 +40,14 @@ export default function AdminSiteSettings() {
       <div className="adm-panel" style={{ marginBottom: 20 }}>
         <h2>Configurações do site</h2>
         <p className="sub">
-          Essas mudanças aparecem na loja na hora — mas ficam salvas só neste navegador (é um editor de teste,
-          local, até a loja ser integrada de verdade). Se abrir a loja em outro computador, não vai ver a mudança lá.
+          WhatsApp e senha valem pra loja inteira. Já os textos, cores, logo e banner abaixo ficam salvos só
+          neste navegador (editor de teste local) — se abrir a loja em outro computador, não vai ver essa parte lá.
         </p>
       </div>
 
       {erro && <div className="adm-error" style={{ marginBottom: 14 }}>{erro}</div>}
+
+      <WhatsAppPanel />
 
       <div className="adm-panel" style={{ marginBottom: 20 }}>
         <h2>Textos da home</h2>
@@ -109,6 +112,62 @@ export default function AdminSiteSettings() {
         Restaurar tudo pro padrão
       </button>
     </>
+  );
+}
+
+function WhatsAppPanel() {
+  const [numero, setNumero] = useState('');
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [ok, setOk] = useState(false);
+
+  useEffect(() => {
+    getConfig()
+      .then(c => setNumero(c.whatsapp_numero || ''))
+      .catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar.'))
+      .finally(() => setCarregando(false));
+  }, []);
+
+  async function salvar() {
+    setErro(''); setOk(false);
+    const limpo = numero.replace(/\D/g, '');
+    if (!/^55\d{10,11}$/.test(limpo)) {
+      setErro('Formato esperado: 55 + DDD + número, só dígitos (ex: 5511948991616).');
+      return;
+    }
+    setSalvando(true);
+    try {
+      await setConfig('whatsapp_numero', limpo);
+      setNumero(limpo);
+      setOk(true);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="adm-panel" style={{ marginBottom: 20 }}>
+      <h2>WhatsApp</h2>
+      <p className="sub">
+        Número usado nos botões de WhatsApp da loja (o flutuante e o da página de Contato) — vale pra todo mundo que visita, não só neste navegador.
+      </p>
+      {carregando ? (
+        <div className="adm-empty">Carregando…</div>
+      ) : (
+        <>
+          <div className="field-group">
+            <label>Número (com DDI 55 + DDD, só números)</label>
+            <input value={numero} onChange={e => setNumero(e.target.value)} placeholder="5511948991616" />
+          </div>
+          {erro && <p className="adm-error">{erro}</p>}
+          {ok && <div className="adm-hint" style={{ marginBottom: 14 }}>✓ Número salvo — já vale pra loja inteira.</div>}
+          <button className="btn-primary" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar número'}</button>
+        </>
+      )}
+    </div>
   );
 }
 

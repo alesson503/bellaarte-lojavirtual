@@ -41,6 +41,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/produtos', require('./routes/produtos'));
 app.use('/api/pedidos', require('./routes/pedidos'));
+app.use('/api/configuracoes', require('./routes/configuracoes'));
 
 app.use((err, _req, res, _next) => {
   if (err?.message === 'Origem não permitida por CORS.') {

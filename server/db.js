@@ -87,6 +87,16 @@ async function migrate() {
       ('Vinil', 'Refilado',  180, 'Adesivo Vinil Refilado'),
       ('Vinil', 'Laminado',  200, 'Adesivo Vinil Laminado')
     ON CONFLICT (material, acabamento) DO NOTHING;
+
+    -- Configurações gerais da loja (chave/valor) — hoje só o WhatsApp, mas
+    -- serve pra qualquer outro dado real (não visual) que precise ser igual
+    -- pra todo mundo que visita, editável pelo admin.
+    CREATE TABLE IF NOT EXISTS configuracoes (
+      chave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    );
+    INSERT INTO configuracoes (chave, valor) VALUES ('whatsapp_numero', '5511948991616')
+    ON CONFLICT (chave) DO NOTHING;
   `);
 }
 

@@ -12,6 +12,8 @@ import Toast from './components/Toast';
 import { WhatsAppIcon, UserIcon } from './icons';
 import { useAuth } from './auth/AuthContext';
 import { useSiteSettings } from './context/SiteSettingsContext';
+import { getConfig } from './services/configService';
+import { WHATSAPP_NUMERO_PADRAO, whatsappLink } from './config';
 import type { CartItem } from './types';
 import heroCanecas from './assets/hero-canecas.jpg';
 
@@ -30,6 +32,10 @@ const NAV_ITEMS: { page: Page; label: string }[] = [
 export default function StoreApp() {
   const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
+  const [whatsapp, setWhatsapp] = useState(WHATSAPP_NUMERO_PADRAO);
+  useEffect(() => {
+    getConfig().then(c => { if (c.whatsapp_numero) setWhatsapp(c.whatsapp_numero); }).catch(() => { /* mantém o padrão */ });
+  }, []);
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [produtosFiltro, setProdutosFiltro] = useState('Todos');
@@ -214,7 +220,8 @@ export default function StoreApp() {
               <h2 className="serif">Não achou o que precisa?</h2>
               <p>Manda uma mensagem — a gente monta um orçamento sob medida em minutos.</p>
             </div>
-            <a className="cta-whats" href="#" onClick={e => e.preventDefault()} style={{ background: 'var(--violet)' }}>
+            <a className="cta-whats" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte e não achei o que eu precisava — pode me ajudar?')}
+              target="_blank" rel="noopener noreferrer" style={{ background: 'var(--violet)' }}>
               <WhatsAppIcon /> Falar no WhatsApp
             </a>
           </div>
@@ -237,7 +244,8 @@ export default function StoreApp() {
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={nome => { setLoginOpen(false); toast(`✓ Bem-vindo(a), ${nome.split(' ')[0]}!`); }} />
       <Toast message={toastMsg} show={toastShow} />
-      <a className="whats-float" href="#" onClick={e => e.preventDefault()} title="Falar no WhatsApp">
+      <a className="whats-float" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte.')}
+        target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp">
         <WhatsAppIcon size={28} />
       </a>
     </>
