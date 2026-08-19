@@ -84,6 +84,21 @@ nav.links a.active { color: var(--violet); }
 nav.links a.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; background: var(--violet); border-radius: 2px; }
 @media (max-width: 860px) { nav.links { display: none; } }
 .nav-right { display: flex; align-items: center; gap: 10px; }
+.hamburger-btn {
+  display: none; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 10px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 17px; cursor: pointer;
+}
+.hamburger-btn:hover { border-color: var(--violet); color: var(--violet); }
+@media (max-width: 860px) { .hamburger-btn { display: inline-flex; } }
+.mobile-nav { display: none; flex-direction: column; padding-bottom: 14px; }
+.mobile-nav.open { display: flex; }
+@media (min-width: 861px) { .mobile-nav { display: none !important; } }
+.mobile-nav a {
+  padding: 13px 2px; font-size: 14.5px; font-weight: 700; color: var(--ink-soft); text-decoration: none;
+  border-top: 1px solid var(--line); cursor: pointer;
+}
+.mobile-nav a.active { color: var(--violet); }
 .cart-pill {
   display: inline-flex; align-items: center; gap: 7px; background: var(--card); color: var(--ink); border: 1.5px solid var(--line);
   border-radius: 99px; padding: 9px 15px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none;

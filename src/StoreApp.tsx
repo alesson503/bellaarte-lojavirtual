@@ -41,6 +41,7 @@ export default function StoreApp() {
   }, []);
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [produtosFiltro, setProdutosFiltro] = useState('Todos');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -64,6 +65,7 @@ export default function StoreApp() {
   function goPage(next: Page, scrollToId?: string) {
     setPage(next);
     setScrollTarget(scrollToId ?? null);
+    setMobileNavOpen(false);
   }
 
   function goProdutos(categoria: string) {
@@ -108,6 +110,7 @@ export default function StoreApp() {
             ))}
           </nav>
           <div className="nav-right">
+            <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
             <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
             <button className="cart-pill" title="Carrinho" onClick={() => setCartOpen(true)}>🛍️ <b>{cart.length}</b></button>
             {user?.role === 'admin' && (
@@ -124,6 +127,13 @@ export default function StoreApp() {
             )}
           </div>
         </div>
+        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
+          {NAV_ITEMS.map(item => (
+            <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => goPage(item.page)}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       {page === 'inicio' && (
