@@ -1,7 +1,7 @@
 import { useMemo, useState, type RefObject } from 'react';
 import { CARTAO_PRECOS, IMP_LABEL } from '../data';
 import { usePromocao } from '../context/PromocaoContext';
-import ArtePreview, { type Arte } from './ArtePreview';
+import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
 
 const QTY_OPTIONS = [100, 250, 500, 1000];
 
@@ -51,9 +51,18 @@ export default function CartaoConfigurator({
           <div className="cfg-preview">
             <div className="flip-stage">
               <div className={`flip-card ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(f => !f)}>
-                <div className="flip-face front">
-                  <div className="logo-dot" />
-                  <div><b>Bella Arte</b><br /><span>GRÁFICA &amp; PERSONALIZADOS</span></div>
+                <div className="flip-face front" style={arte && ehImagem(arte) ? { padding: 0, overflow: 'hidden' } : undefined}>
+                  {arte && ehImagem(arte) ? (
+                    <>
+                      <img src={arte.dataUrl} alt="Prévia da sua arte" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <ArteGuides formato="retangulo" larguraMm={90} alturaMm={50} />
+                    </>
+                  ) : (
+                    <>
+                      <div className="logo-dot" />
+                      <div><b>Bella Arte</b><br /><span>GRÁFICA &amp; PERSONALIZADOS</span></div>
+                    </>
+                  )}
                 </div>
                 <div className="flip-face back">
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
@@ -62,6 +71,7 @@ export default function CartaoConfigurator({
                 </div>
               </div>
             </div>
+            {arte && ehImagem(arte) && <ArteLegend />}
             <div className="flip-hint">👆 toque no cartão pra virar</div>
           </div>
           <div className="cfg-fields">
@@ -95,7 +105,7 @@ export default function CartaoConfigurator({
                 </div>
               </div>
             )}
-            <ArtePreview formato="retangulo" larguraMm={90} alturaMm={50} arte={arte} onArteChange={setArte} />
+            <ArteUpload arte={arte} onArteChange={setArte} />
             <div className="cfg-price-bar">
               <div className="amount mono">
                 {percentual > 0 && <span className="old-price">R$ {totalCheio.toFixed(2).replace('.', ',')}</span>}

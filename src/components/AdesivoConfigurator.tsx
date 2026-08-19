@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
 import { getAdesivoPrecos } from '../services/productsService';
 import { usePromocao } from '../context/PromocaoContext';
-import ArtePreview, { type Arte } from './ArtePreview';
+import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
@@ -72,16 +72,26 @@ export default function AdesivoConfigurator({
         </div>
         <div className="configurator reveal in">
           <div className="cfg-preview">
-            <div className="sheet-mock" style={{ width: mockWidthPx, gridTemplateColumns: `repeat(${showCols}, 1fr)` }}>
-              {Array.from({ length: showCols * showRows }).map((_, i) => (
-                <div key={i} style={{ aspectRatio: '1', background: 'var(--violet)', opacity: 0.85, borderRadius: shape === 'circulo' ? '50%' : '3px' }} />
-              ))}
-              {truncated && (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 10, color: 'var(--graphite-faint)', fontWeight: 700 }}>
-                  + bobina continua ({calc.rowsNeeded} fileira{calc.rowsNeeded !== 1 ? 's' : ''} no total)
+            {arte && ehImagem(arte) ? (
+              <>
+                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 200, height: 200 }}>
+                  <img src={arte.dataUrl} alt="Prévia da sua arte" />
+                  <ArteGuides formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} />
                 </div>
-              )}
-            </div>
+                <ArteLegend />
+              </>
+            ) : (
+              <div className="sheet-mock" style={{ width: mockWidthPx, gridTemplateColumns: `repeat(${showCols}, 1fr)` }}>
+                {Array.from({ length: showCols * showRows }).map((_, i) => (
+                  <div key={i} style={{ aspectRatio: '1', background: 'var(--violet)', opacity: 0.85, borderRadius: shape === 'circulo' ? '50%' : '3px' }} />
+                ))}
+                {truncated && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 10, color: 'var(--graphite-faint)', fontWeight: 700 }}>
+                    + bobina continua ({calc.rowsNeeded} fileira{calc.rowsNeeded !== 1 ? 's' : ''} no total)
+                  </div>
+                )}
+              </div>
+            )}
             <div className="sheet-fit-note">
               <b>{calc.perRow}</b> por fileira{' '}
               <span>
@@ -138,7 +148,7 @@ export default function AdesivoConfigurator({
                 <span className="mono" style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>quantidade exata (vale pra pedidos grandes também)</span>
               </div>
             </div>
-            <ArtePreview formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} arte={arte} onArteChange={setArte} />
+            <ArteUpload arte={arte} onArteChange={setArte} />
             <div className="cfg-price-bar">
               <div className="amount mono">
                 {percentual > 0 && <span className="old-price">R$ {calc.totalCheio.toFixed(2).replace('.', ',')}</span>}
