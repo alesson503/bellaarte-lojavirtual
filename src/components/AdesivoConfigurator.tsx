@@ -57,7 +57,7 @@ export default function AdesivoConfigurator({
     return { perRow, rowsNeeded, widthUsedCm, lengthNeededM, widthUsedM, precoM2, totalCheio, total, rollMaxWidthCm };
   }, [sizeCm, qty, tipo, acab, precos, fator]);
 
-  const maxPreviewPx = 180;
+  const maxPreviewPx = 260;
   const mockWidthPx = Math.max(48, Math.round((calc.widthUsedCm / calc.rollMaxWidthCm) * maxPreviewPx));
   const showCols = Math.min(calc.perRow, 6);
   const showRows = Math.min(calc.rowsNeeded, 9);
@@ -75,7 +75,7 @@ export default function AdesivoConfigurator({
           <div className="cfg-preview">
             {arte && ehImagem(arte) ? (
               <>
-                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 280, height: 280 }}>
+                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 320, height: 320 }}>
                   <img src={arte.dataUrl} alt="Prévia da sua arte" />
                   <ArteGuides formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} />
                 </div>

@@ -87,7 +87,7 @@ export default function CartaoConfigurator({
                       <ArteGuides formato="retangulo" larguraMm={90} alturaMm={50} />
                     </>
                   ) : (
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
                       <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3z" />
                     </svg>
                   )}
