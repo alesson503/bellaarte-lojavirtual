@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { fileToDataUrl } from '../lib/fileToDataUrl';
+import type { ArteAnexo } from '../types';
 
-export interface Arte { nome: string; tipo: string; dataUrl: string }
+export type Arte = ArteAnexo;
 
 const BLEED_MM = 2;
 const SAFE_MM = 3;
@@ -13,7 +14,14 @@ export function ehImagem(arte: Arte | null): boolean {
 // Só o controle de upload (dropzone + arquivo-sem-prévia) — fica junto dos
 // outros campos do formulário. A prévia visual em si (ArteGuides/ArteLegend)
 // mora no quadro de destaque do configurador, não aqui embaixo.
-export function ArteUpload({ arte, onArteChange }: { arte: Arte | null; onArteChange: (arte: Arte | null) => void }) {
+export function ArteUpload({
+  arte, onArteChange, label = 'Sua arte (opcional)', nota,
+}: {
+  arte: Arte | null;
+  onArteChange: (arte: Arte | null) => void;
+  label?: string;
+  nota?: string;
+}) {
   const [erro, setErro] = useState('');
   const [arrastando, setArrastando] = useState(false);
 
@@ -30,7 +38,8 @@ export function ArteUpload({ arte, onArteChange }: { arte: Arte | null; onArteCh
 
   return (
     <div>
-      <label className="field-label">Sua arte (opcional)</label>
+      <label className="field-label">{label}</label>
+      {nota && <p className="sub" style={{ margin: '-4px 0 8px' }}>{nota}</p>}
       <label
         className="dropzone"
         onDragOver={e => { e.preventDefault(); setArrastando(true); }}

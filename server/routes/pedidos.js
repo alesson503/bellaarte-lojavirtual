@@ -20,8 +20,11 @@ router.post('/', criarLimiter, async (req, res) => {
     }
     if (itens.length > 100) return res.status(400).json({ error: 'Pedido com muitos itens.' });
     for (const item of itens) {
-      if (item?.arte?.dataUrl && item.arte.dataUrl.length > 14 * 1024 * 1024) {
-        return res.status(400).json({ error: `A arte de "${item.nome}" é grande demais. Tenta um arquivo menor.` });
+      for (const lado of ['frente', 'verso']) {
+        const dataUrl = item?.arte?.[lado]?.dataUrl;
+        if (dataUrl && dataUrl.length > 14 * 1024 * 1024) {
+          return res.status(400).json({ error: `A arte (${lado}) de "${item.nome}" é grande demais. Tenta um arquivo menor.` });
+        }
       }
     }
 
@@ -77,9 +80,10 @@ router.post('/:id/enviar-erp', authMiddleware, adminOnly, async (req, res) => {
     // só um aviso em texto de que tem arte anexada (o arquivo em si fica só
     // no painel da loja, pra não sobrecarregar o sistema do ERP à toa).
     const itensParaErp = (pedido.itens || []).map(item => {
-      if (!item?.arte) return item;
+      if (!item?.arte?.frente && !item?.arte?.verso) return item;
       const { arte, ...resto } = item;
-      const notaArte = `Arte anexada: ${arte.nome} (baixar no painel da loja)`;
+      const nomes = [arte.frente && `frente: ${arte.frente.nome}`, arte.verso && `verso: ${arte.verso.nome}`].filter(Boolean).join(', ');
+      const notaArte = `Arte anexada (${nomes}) — baixar no painel da loja`;
       return { ...resto, observacao: [resto.observacao, notaArte].filter(Boolean).join(' | ') };
     });
 

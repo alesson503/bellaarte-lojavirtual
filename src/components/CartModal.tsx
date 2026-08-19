@@ -26,7 +26,8 @@ export default function CartModal({
                 <div className="info">
                   <b>{item.nome}{item.quantidade > 1 ? ` × ${item.quantidade}` : ''}</b>
                   {item.observacao && <div>obs: {item.observacao}</div>}
-                  {item.arte && <div>📎 arte anexada: {item.arte.nome}</div>}
+                  {item.arte?.frente && <div>📎 arte (frente): {item.arte.frente.nome}</div>}
+                  {item.arte?.verso && <div>📎 arte (verso): {item.arte.verso.nome}</div>}
                 </div>
                 <div className="price-col">
                   <b>{fmt(item.preco * item.quantidade)}</b>

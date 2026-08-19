@@ -207,8 +207,8 @@ section { padding: 68px 0; }
 .cfg-price-bar .amount small { font-size: 12.5px; font-weight: 600; color: var(--graphite-faint); }
 .cfg-price-bar .meta { text-align: right; font-size: 11.5px; color: var(--graphite-faint); }
 .sheet-mock { max-width: 180px; min-height: 60px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 11px; display: grid; gap: 5px; transition: width 0.15s ease; }
-.sheet-fit-note { font-size: 12.5px; color: var(--ink-soft); text-align: center; }
-.sheet-fit-note b { color: var(--violet-deep); font-size: 15px; }
+.sheet-fit-note { font-size: 13.5px; color: var(--ink-soft); text-align: center; }
+.sheet-fit-note b { color: var(--violet-deep); font-size: 16.5px; }
 .flip-stage { perspective: 1300px; }
 .flip-card { width: 250px; height: 152px; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.2,.8,.2,1); cursor: pointer; }
 .flip-card.flipped { transform: rotateY(180deg); }
@@ -367,11 +367,11 @@ footer.site { padding: 40px 0 60px; border-top: 1px solid var(--line); margin-to
 .guide.corte { border: 1.5px dashed var(--corte); }
 .guide.seguranca { border: 1.5px dashed var(--seguranca); }
 .guide.circulo { border-radius: 50%; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
-.legend .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; padding: 5px 10px; border-radius: 99px; }
+.legend { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 12px; }
+.legend .chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 99px; }
 .legend .chip.corte { background: var(--corte-bg); color: var(--corte); }
 .legend .chip.seguranca { background: var(--seguranca-bg); color: var(--seguranca); }
-.legend .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.legend .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .filecard {
   display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line);
   border-radius: 12px; padding: 12px 14px; font-size: 12.5px;

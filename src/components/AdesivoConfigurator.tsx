@@ -3,6 +3,7 @@ import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
 import { getAdesivoPrecos } from '../services/productsService';
 import { usePromocao } from '../context/PromocaoContext';
 import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
+import type { ArteAnexo } from '../types';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
@@ -14,7 +15,7 @@ export default function AdesivoConfigurator({
   onAdd,
   sectionRef,
 }: {
-  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: Arte | null) => void;
+  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null) => void;
   sectionRef?: RefObject<HTMLElement | null>;
 }) {
   const [tipo, setTipo] = useState<Tipo>('UV');
@@ -74,7 +75,7 @@ export default function AdesivoConfigurator({
           <div className="cfg-preview">
             {arte && ehImagem(arte) ? (
               <>
-                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 200, height: 200 }}>
+                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 280, height: 280 }}>
                   <img src={arte.dataUrl} alt="Prévia da sua arte" />
                   <ArteGuides formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} />
                 </div>
@@ -159,7 +160,7 @@ export default function AdesivoConfigurator({
             <div className="cfg-note">
               A bobina tem 1m de largura fixa — o comprimento cresce conforme o tamanho e a quantidade pedida. Preço = área da bobina usada (largura × comprimento) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
             </div>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${qty}un)`, calc.total, 1, undefined, arte); setArte(null); }}>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${qty}un)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined); setArte(null); }}>
               Adicionar ao pedido
             </button>
           </div>

@@ -66,10 +66,17 @@ export default function AdminOrders() {
                     <div key={idx} style={{ marginBottom: o.itens.length > 1 ? 4 : 0 }}>
                       {i.nome}{i.quantidade > 1 ? ` × ${i.quantidade}` : ''}
                       {i.observacao && <div style={{ fontSize: 11, color: 'var(--graphite-faint)' }}>obs: {i.observacao}</div>}
-                      {i.arte && (
+                      {i.arte?.frente && (
                         <div style={{ fontSize: 11 }}>
-                          📎 <a href={i.arte.dataUrl} download={i.arte.nome} style={{ color: 'var(--violet-deep)', fontWeight: 700 }}>
-                            Baixar arte ({i.arte.nome})
+                          📎 <a href={i.arte.frente.dataUrl} download={i.arte.frente.nome} style={{ color: 'var(--violet-deep)', fontWeight: 700 }}>
+                            Baixar arte — frente ({i.arte.frente.nome})
+                          </a>
+                        </div>
+                      )}
+                      {i.arte?.verso && (
+                        <div style={{ fontSize: 11 }}>
+                          📎 <a href={i.arte.verso.dataUrl} download={i.arte.verso.nome} style={{ color: 'var(--violet-deep)', fontWeight: 700 }}>
+                            Baixar arte — verso ({i.arte.verso.nome})
                           </a>
                         </div>
                       )}
