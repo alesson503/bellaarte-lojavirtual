@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
 import { getAdesivoPrecos } from '../services/productsService';
 import { usePromocao } from '../context/PromocaoContext';
+import ArtePreview, { type Arte } from './ArtePreview';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
@@ -13,7 +14,7 @@ export default function AdesivoConfigurator({
   onAdd,
   sectionRef,
 }: {
-  onAdd: (nome: string, preco: number) => void;
+  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: Arte | null) => void;
   sectionRef?: RefObject<HTMLElement | null>;
 }) {
   const [tipo, setTipo] = useState<Tipo>('UV');
@@ -21,6 +22,7 @@ export default function AdesivoConfigurator({
   const [shape, setShape] = useState<Formato>('circulo');
   const [sizeCm, setSizeCm] = useState(5);
   const [qty, setQty] = useState(50);
+  const [arte, setArte] = useState<Arte | null>(null);
   const { fator, percentual } = usePromocao();
   // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
   const [precos, setPrecos] = useState(ADESIVO_PRECOS_FALLBACK);
@@ -136,6 +138,7 @@ export default function AdesivoConfigurator({
                 <span className="mono" style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>quantidade exata (vale pra pedidos grandes também)</span>
               </div>
             </div>
+            <ArtePreview formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} arte={arte} onArteChange={setArte} />
             <div className="cfg-price-bar">
               <div className="amount mono">
                 {percentual > 0 && <span className="old-price">R$ {calc.totalCheio.toFixed(2).replace('.', ',')}</span>}
@@ -146,7 +149,7 @@ export default function AdesivoConfigurator({
             <div className="cfg-note">
               A bobina tem 1m de largura fixa — o comprimento cresce conforme o tamanho e a quantidade pedida. Preço = área da bobina usada (largura × comprimento) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
             </div>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => onAdd(`Adesivo ${tipo} ${acab} (${qty}un)`, calc.total)}>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${qty}un)`, calc.total, 1, undefined, arte); setArte(null); }}>
               Adicionar ao pedido
             </button>
           </div>

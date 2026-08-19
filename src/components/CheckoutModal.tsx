@@ -58,7 +58,7 @@ export default function CheckoutModal({
         <div className="checkout-summary">
           {cart.map((x, i) => (
             <div className="checkout-summary-row" key={i}>
-              <span>{x.nome}{x.quantidade > 1 ? ` × ${x.quantidade}` : ''}{x.observacao ? ` — obs: ${x.observacao}` : ''}</span>
+              <span>{x.nome}{x.quantidade > 1 ? ` × ${x.quantidade}` : ''}{x.observacao ? ` — obs: ${x.observacao}` : ''}{x.arte ? ' · 📎 arte anexada' : ''}</span>
               <span>{fmt(x.preco * x.quantidade)}</span>
             </div>
           ))}

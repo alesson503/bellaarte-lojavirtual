@@ -1,6 +1,7 @@
 import { useMemo, useState, type RefObject } from 'react';
 import { CARTAO_PRECOS, IMP_LABEL } from '../data';
 import { usePromocao } from '../context/PromocaoContext';
+import ArtePreview, { type Arte } from './ArtePreview';
 
 const QTY_OPTIONS = [100, 250, 500, 1000];
 
@@ -8,13 +9,14 @@ export default function CartaoConfigurator({
   onAdd,
   sectionRef,
 }: {
-  onAdd: (nome: string, preco: number) => void;
+  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: Arte | null) => void;
   sectionRef?: RefObject<HTMLElement | null>;
 }) {
   const [qty, setQty] = useState(1000);
   const [verniz, setVerniz] = useState<'nao' | 'sim'>('nao');
   const [imp, setImp] = useState('4x0');
   const [flipped, setFlipped] = useState(false);
+  const [arte, setArte] = useState<Arte | null>(null);
   const { fator, percentual } = usePromocao();
 
   const opcoesImp = useMemo(() => {
@@ -93,6 +95,7 @@ export default function CartaoConfigurator({
                 </div>
               </div>
             )}
+            <ArtePreview formato="retangulo" larguraMm={90} alturaMm={50} arte={arte} onArteChange={setArte} />
             <div className="cfg-price-bar">
               <div className="amount mono">
                 {percentual > 0 && <span className="old-price">R$ {totalCheio.toFixed(2).replace('.', ',')}</span>}
@@ -104,7 +107,8 @@ export default function CartaoConfigurator({
               className="btn-primary" style={{ width: '100%' }}
               onClick={() => {
                 const vernizTxt = qty === 1000 ? (verniz === 'sim' ? 'com verniz, ' : 'sem verniz, ') : '';
-                onAdd(`Cartão de Visita ${qty}un, ${vernizTxt}${IMP_LABEL[impAtual]}`, total);
+                onAdd(`Cartão de Visita ${qty}un, ${vernizTxt}${IMP_LABEL[impAtual]}`, total, 1, undefined, arte);
+                setArte(null);
               }}
             >
               Adicionar ao pedido

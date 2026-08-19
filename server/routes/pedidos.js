@@ -19,6 +19,11 @@ router.post('/', criarLimiter, async (req, res) => {
       return res.status(400).json({ error: 'O pedido precisa ter pelo menos um item.' });
     }
     if (itens.length > 100) return res.status(400).json({ error: 'Pedido com muitos itens.' });
+    for (const item of itens) {
+      if (item?.arte?.dataUrl && item.arte.dataUrl.length > 14 * 1024 * 1024) {
+        return res.status(400).json({ error: `A arte de "${item.nome}" é grande demais. Tenta um arquivo menor.` });
+      }
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO pedidos (cliente_id, nome, telefone, entrega, itens, total)
@@ -68,13 +73,23 @@ router.post('/:id/enviar-erp', authMiddleware, adminOnly, async (req, res) => {
   if (pedido.enviado_erp) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP.' });
 
   try {
+    // O ERP não precisa (e não deveria) receber o arquivo de arte em base64 —
+    // só um aviso em texto de que tem arte anexada (o arquivo em si fica só
+    // no painel da loja, pra não sobrecarregar o sistema do ERP à toa).
+    const itensParaErp = (pedido.itens || []).map(item => {
+      if (!item?.arte) return item;
+      const { arte, ...resto } = item;
+      const notaArte = `Arte anexada: ${arte.nome} (baixar no painel da loja)`;
+      return { ...resto, observacao: [resto.observacao, notaArte].filter(Boolean).join(' | ') };
+    });
+
     const erpRes = await fetch(`${process.env.ERP_API_URL}/api/pedidos-site`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-loja-secret': process.env.ERP_API_SECRET },
       body: JSON.stringify({
         nome: pedido.nome,
         telefone: pedido.telefone,
-        itens: pedido.itens,
+        itens: itensParaErp,
         total: pedido.total,
         entrega: pedido.entrega,
       }),

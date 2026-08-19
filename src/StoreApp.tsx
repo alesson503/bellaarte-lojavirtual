@@ -79,8 +79,8 @@ export default function StoreApp() {
     else window.scrollTo(0, 0);
   }, [page, scrollTarget]);
 
-  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string) {
-    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined }]);
+  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
+    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined }]);
     const totalItem = preco * quantidade;
     toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
   }

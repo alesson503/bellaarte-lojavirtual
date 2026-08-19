@@ -13,7 +13,9 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(express.json({ limit: '1mb' }));
+// 40mb pra caber pedidos com arte anexada do configurador de Adesivo/Cartão
+// (arquivo até 10MB vira ~13MB em base64 — dá folga pra alguns itens juntos).
+app.use(express.json({ limit: '40mb' }));
 
 // CORS restrito só aos domínios da loja (não aberto pra qualquer site).
 const allowedOrigins = (process.env.FRONTEND_URL || '')
