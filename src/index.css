@@ -169,6 +169,12 @@ section { padding: 68px 0; }
 .rail { display: flex; gap: 16px; overflow-x: auto; padding: 4px 4px 14px; scroll-snap-type: x proximity; margin: 0 -4px; }
 .rail::-webkit-scrollbar { height: 6px; }
 .rail::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+.rail-wrap { position: relative; }
+.rail-wrap::after {
+  content: ''; position: absolute; top: 4px; right: 0; bottom: 14px; width: 44px;
+  background: linear-gradient(to right, transparent, var(--paper)); pointer-events: none;
+}
+@media (min-width: 861px) { .rail-wrap::after { display: none; } }
 .cat-card {
   scroll-snap-align: start; flex: 0 0 210px; border: none; border-radius: 20px;
   padding: 22px 20px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; text-align: left;
@@ -189,12 +195,14 @@ section { padding: 68px 0; }
 
 /* ── configuradores (monte o seu) ── */
 .configurator {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--card); border: 1px solid var(--line);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; background: var(--card); border: 1px solid var(--line);
   border-radius: 24px; overflow: hidden; box-shadow: var(--shadow);
 }
-@media (max-width: 860px) { .configurator { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .configurator { grid-template-columns: minmax(0, 1fr); } }
 .cfg-preview { background: var(--blush); padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; }
+@media (max-width: 480px) { .cfg-preview { padding: 28px 20px; } }
 .cfg-fields { padding: 36px 40px; display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 480px) { .cfg-fields { padding: 28px 20px; } }
 .cfg-fields h3 { font-size: 21px; }
 .field-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--graphite); margin-bottom: 9px; display: block; }
 .swatch-row { display: flex; gap: 9px; flex-wrap: wrap; }
@@ -206,11 +214,11 @@ section { padding: 68px 0; }
 .cfg-price-bar .amount { font-size: 28px; font-weight: 800; color: var(--violet-deep); }
 .cfg-price-bar .amount small { font-size: 12.5px; font-weight: 600; color: var(--graphite-faint); }
 .cfg-price-bar .meta { text-align: right; font-size: 11.5px; color: var(--graphite-faint); }
-.sheet-mock { max-width: 260px; min-height: 60px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 6px; transition: width 0.15s ease; }
+.sheet-mock { width: 100%; max-width: 260px; min-height: 60px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 6px; transition: width 0.15s ease; }
 .sheet-fit-note { font-size: 15px; color: var(--ink-soft); text-align: center; }
 .sheet-fit-note b { color: var(--violet-deep); font-size: 19px; }
-.flip-stage { perspective: 1300px; }
-.flip-card { width: 320px; height: 195px; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.2,.8,.2,1); cursor: pointer; }
+.flip-stage { perspective: 1300px; width: 100%; max-width: 320px; display: flex; justify-content: center; }
+.flip-card { width: 100%; aspect-ratio: 320 / 195; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.2,.8,.2,1); cursor: pointer; }
 .flip-card.flipped { transform: rotateY(180deg); }
 .flip-face { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; box-shadow: var(--shadow-lift); display: flex; flex-direction: column; justify-content: space-between; padding: 22px; }
 .flip-face.front { background: var(--card); color: var(--ink); }
@@ -337,6 +345,7 @@ footer.site { padding: 40px 0 60px; border-top: 1px solid var(--line); margin-to
 .cart-total-row b { font-size: 21px; color: var(--violet-deep); }
 .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
 .btn-flex { flex: 1; }
+@media (max-width: 480px) { .modal-actions { flex-direction: column; } }
 .btn-outline-full { background: none; border: 1.5px solid var(--line); color: var(--ink); border-radius: 11px; padding: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .btn-outline-full:hover { border-color: var(--violet); color: var(--violet); }
 .field-group { margin-bottom: 14px; }

@@ -93,6 +93,7 @@ export default function AdminPromotions() {
         ) : promocoes.length === 0 ? (
           <div className="adm-empty">Nenhuma promoção cadastrada ainda.</div>
         ) : (
+          <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr><th>Nome</th><th>Desconto</th><th>Início</th><th>Fim</th><th>Status</th><th></th></tr>
@@ -129,6 +130,7 @@ export default function AdminPromotions() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </>

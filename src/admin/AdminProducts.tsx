@@ -60,6 +60,7 @@ export default function AdminProducts() {
         ) : lojaProdutos.length === 0 ? (
           <div className="adm-empty">Nenhum produto sincronizado ainda — clique em "Sincronizar agora".</div>
         ) : (
+          <div className="adm-table-wrap">
           <table className="adm-table" style={{ marginTop: 16 }}>
             <thead>
               <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th></th></tr>
@@ -88,6 +89,7 @@ export default function AdminProducts() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -101,6 +103,7 @@ export default function AdminProducts() {
         {!erpProdutos ? (
           <div className="adm-empty">Carregando…</div>
         ) : (
+          <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Unidade</th></tr>
@@ -121,6 +124,7 @@ export default function AdminProducts() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </>
@@ -182,6 +186,7 @@ function AdesivoStatusPanel() {
               )}
             </div>
           )}
+          <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr><th>Material</th><th>Acabamento</th><th>Preço</th><th>Nome esperado no ERP</th><th>Status</th></tr>
@@ -222,6 +227,7 @@ function AdesivoStatusPanel() {
               })}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </div>

@@ -173,6 +173,7 @@ export default function StoreApp() {
               <h2 className="serif">O que a gente faz por aqui</h2>
               <p>Do cartão que vai na carteira ao adesivo que vai na garrafinha — clique numa categoria pra ir direto pra ela no catálogo.</p>
             </div>
+            <div className="rail-wrap">
             <div className="rail">
               <button className="cat-card tone-a" onClick={() => goPage('personalize', 'adesivos')}>
                 <div className="ic">🏷️</div>
@@ -194,6 +195,7 @@ export default function StoreApp() {
                 <div className="ic">✨</div>
                 <b>Diversos</b><span>Panfletos, placas PS, polaroid e mais</span>
               </button>
+            </div>
             </div>
           </div>
         </section>

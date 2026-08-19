@@ -33,6 +33,7 @@ export default function AdminDashboard() {
         {orders.length === 0 ? (
           <div className="adm-empty">Nenhum pedido ainda — finalize uma compra na loja pra ver aqui.</div>
         ) : (
+          <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr><th>Cliente</th><th>Itens</th><th>Total</th><th>Data</th></tr>
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </>

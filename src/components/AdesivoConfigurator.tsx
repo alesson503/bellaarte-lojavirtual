@@ -75,7 +75,7 @@ export default function AdesivoConfigurator({
           <div className="cfg-preview">
             {arte && ehImagem(arte) ? (
               <>
-                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 320, height: 320 }}>
+                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 'min(320px, 100%)', aspectRatio: '1' }}>
                   <img src={arte.dataUrl} alt="Prévia da sua arte" />
                   <ArteGuides formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} />
                 </div>
