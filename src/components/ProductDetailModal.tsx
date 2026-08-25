@@ -11,11 +11,13 @@ export default function ProductDetailModal({
   produto,
   onClose,
   onAdd,
+  onComprarAgora,
   whatsapp,
 }: {
   produto: SimpleProduct | null;
   onClose: () => void;
   onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string) => void;
+  onComprarAgora: (nome: string, preco: number, quantidade?: number, observacao?: string) => void;
   whatsapp: string;
 }) {
   const [corSelecionada, setCorSelecionada] = useState<string | null>(null);
@@ -41,6 +43,12 @@ export default function ProductDetailModal({
   function adicionar() {
     if (!produto) return;
     onAdd(nomeComCor, produto.preco, quantidade, observacao);
+    onClose();
+  }
+
+  function comprarAgora() {
+    if (!produto) return;
+    onComprarAgora(nomeComCor, produto.preco, quantidade, observacao);
     onClose();
   }
 
@@ -120,6 +128,9 @@ export default function ProductDetailModal({
 
           <div className="modal-actions">
             <button className="add-btn btn-flex" onClick={adicionar}>Adicionar ao pedido</button>
+            <button className="buy-now-btn btn-flex" onClick={comprarAgora}>⚡ Comprar agora</button>
+          </div>
+          <div className="modal-actions" style={{ marginTop: 10 }}>
             <a
               className="btn-outline-full btn-flex" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
               href={whatsappLink(whatsapp, mensagemWhats)}

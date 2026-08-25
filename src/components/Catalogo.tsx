@@ -7,11 +7,13 @@ import ProductDetailModal from './ProductDetailModal';
 
 export default function Catalogo({
   onAdd,
+  onComprarAgora,
   onGoPersonalize,
   filtroInicial,
   whatsapp,
 }: {
   onAdd: (nome: string, preco: number) => void;
+  onComprarAgora: (nome: string, preco: number, quantidade?: number, observacao?: string) => void;
   onGoPersonalize: (scrollToId: 'adesivos' | 'cartoes') => void;
   filtroInicial: string;
   whatsapp: string;
@@ -103,7 +105,7 @@ export default function Catalogo({
           )}
         </div>
       </div>
-      <ProductDetailModal produto={detalhe} onClose={() => setDetalhe(null)} onAdd={onAdd} whatsapp={whatsapp} />
+      <ProductDetailModal produto={detalhe} onClose={() => setDetalhe(null)} onAdd={onAdd} onComprarAgora={onComprarAgora} whatsapp={whatsapp} />
     </section>
   );
 }

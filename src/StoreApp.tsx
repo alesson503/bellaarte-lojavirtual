@@ -85,12 +85,24 @@ export default function StoreApp() {
     toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
   }
 
+  // "Comprar agora" — mesma coisa que adicionar ao pedido, só que já abre
+  // direto a tela de finalizar (sem passar pela tela do carrinho no meio).
+  function comprarAgora(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
+    addToCart(nome, preco, quantidade, observacao, arte);
+    setCheckoutOpen(true);
+  }
+
   function removeFromCart(idx: number) {
     setCart(prev => prev.filter((_, i) => i !== idx));
   }
 
   return (
     <>
+      <div className="info-bar">
+        <span>🚚 Frete combinado direto com você pelo WhatsApp</span>
+        <span>✂️ Arte revisada antes de imprimir</span>
+        <span>💬 Atendimento rápido</span>
+      </div>
       {promocao && (
         <div className="promo-banner">
           🎉 <b>{promocao.nome}</b> — {promocao.percentual}% OFF em toda a loja
@@ -165,6 +177,17 @@ export default function StoreApp() {
         </div>
       )}
 
+      {page === 'inicio' && (
+        <div className="shell">
+          <div className="trust-badges">
+            <div><span className="ic">🔒</span>Compra segura</div>
+            <div><span className="ic">🎨</span>Arte revisada</div>
+            <div><span className="ic">⚡</span>Produção em 48h</div>
+            <div><span className="ic">💬</span>Atendimento direto</div>
+          </div>
+        </div>
+      )}
+
       {page === 'categorias' && (
         <section>
           <div className="shell">
@@ -234,7 +257,7 @@ export default function StoreApp() {
       )}
 
       {page === 'produtos' && (
-        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onGoPersonalize={id => goPage('personalize', id)} whatsapp={whatsapp} />
+        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onComprarAgora={comprarAgora} onGoPersonalize={id => goPage('personalize', id)} whatsapp={whatsapp} />
       )}
 
       {page === 'contato' && (
