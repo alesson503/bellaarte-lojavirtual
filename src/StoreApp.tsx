@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
 import CartaoConfigurator from './components/CartaoConfigurator';
 import Catalogo from './components/Catalogo';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
-import UploadModal from './components/UploadModal';
-import LoginModal from './components/LoginModal';
-import Logo from './components/Logo';
-import { WhatsAppIcon, UserIcon } from './icons';
-import { useAuth } from './auth/AuthContext';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import { WhatsAppIcon } from './icons';
 import { useSiteSettings } from './context/SiteSettingsContext';
-import { usePromocao } from './context/PromocaoContext';
 import { useCart } from './context/CartContext';
 import { useToast } from './context/ToastContext';
 import { useWhatsapp } from './context/WhatsappContext';
@@ -22,30 +18,16 @@ import heroCanecas from './assets/hero-canecas.jpg';
 
 export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'produtos' | 'contato';
 
-const NAV_ITEMS: { page: Page; label: string }[] = [
-  { page: 'inicio', label: 'Início' },
-  { page: 'categorias', label: 'Categorias' },
-  { page: 'produtos', label: 'Produtos' },
-  { page: 'personalize', label: 'Personalize' },
-  { page: 'como', label: 'Como funciona' },
-  { page: 'contato', label: 'Contato' },
-];
-
 export default function StoreApp() {
-  const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
-  const { promocao } = usePromocao();
   const whatsapp = useWhatsapp();
   const { toast } = useToast();
   const { cart, addToCart, removeFromCart } = useCart();
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [produtosFiltro, setProdutosFiltro] = useState('Todos');
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
@@ -53,7 +35,6 @@ export default function StoreApp() {
   function goPage(next: Page, scrollToId?: string) {
     setPage(next);
     setScrollTarget(scrollToId ?? null);
-    setMobileNavOpen(false);
   }
 
   function goProdutos(categoria: string) {
@@ -76,55 +57,7 @@ export default function StoreApp() {
 
   return (
     <>
-      <div className="info-bar">
-        <span>🚚 Frete combinado direto com você pelo WhatsApp</span>
-        <span>✂️ Arte revisada antes de imprimir</span>
-        <span>💬 Atendimento rápido</span>
-      </div>
-      {promocao && (
-        <div className="promo-banner">
-          🎉 <b>{promocao.nome}</b> — {promocao.percentual}% OFF em toda a loja
-        </div>
-      )}
-      <header className="site">
-        <div className="shell nav">
-          <button className="brand" onClick={() => goPage('inicio')}>
-            <Logo size={40} />
-            <span className="word">Bella <span>Arte</span></span>
-          </button>
-          <nav className="links">
-            {NAV_ITEMS.map(item => (
-              <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => goPage(item.page)}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-          <div className="nav-right">
-            <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
-            <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
-            <button className="cart-pill" title="Carrinho" onClick={() => setCartOpen(true)}>🛍️ <b>{cart.length}</b></button>
-            {user?.role === 'admin' && (
-              <Link className="cart-pill" to="/admin" title="Voltar pro painel administrativo">⚙️ Painel admin</Link>
-            )}
-            {user ? (
-              <button className="cart-pill" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
-                <UserIcon /> {user.nome.split(' ')[0]}
-              </button>
-            ) : (
-              <button className="cart-pill" title="Entrar / criar conta" onClick={() => setLoginOpen(true)}>
-                <UserIcon /> Entrar
-              </button>
-            )}
-          </div>
-        </div>
-        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
-          {NAV_ITEMS.map(item => (
-            <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => goPage(item.page)}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <Header page={page} onGoPage={goPage} onOpenCart={() => setCartOpen(true)} />
 
       {page === 'inicio' && (
         <div className="shell hero">
@@ -253,11 +186,7 @@ export default function StoreApp() {
         </div>
       )}
 
-      <footer className="site">
-        <div className="shell foot-row">
-          <span>🎨 Bella Arte — Gráfica &amp; Personalizados, São Paulo/SP</span>
-        </div>
-      </footer>
+      <Footer />
 
       <CartModal open={cartOpen} cart={cart} onClose={() => setCartOpen(false)} onRemove={removeFromCart}
         onCheckout={() => {
@@ -266,12 +195,6 @@ export default function StoreApp() {
           setCheckoutOpen(true);
         }} />
       <CheckoutModal open={checkoutOpen} cart={cart} onClose={() => setCheckoutOpen(false)} />
-      <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={nome => { setLoginOpen(false); toast(`✓ Bem-vindo(a), ${nome.split(' ')[0]}!`); }} />
-      <a className="whats-float" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte.')}
-        target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp">
-        <WhatsAppIcon size={28} />
-      </a>
     </>
   );
 }

@@ -1,8 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import StoreApp from './StoreApp';
-import { ToastProvider } from './context/ToastContext';
-import { CartProvider } from './context/CartContext';
-import { WhatsappProvider } from './context/WhatsappContext';
+import StoreLayout from './components/StoreLayout';
 import AdminLogin from './admin/AdminLogin';
 import AdminLayout from './admin/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
@@ -14,9 +12,9 @@ import AdminSiteSettings from './admin/AdminSiteSettings';
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={(
-        <ToastProvider><WhatsappProvider><CartProvider><StoreApp /></CartProvider></WhatsappProvider></ToastProvider>
-      )} />
+      <Route element={<StoreLayout />}>
+        <Route path="/" element={<StoreApp />} />
+      </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
