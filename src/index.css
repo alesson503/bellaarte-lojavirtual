@@ -286,11 +286,11 @@ section { padding: 68px 0; }
   aspect-ratio: 1/1; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
   display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
 }
-.prod-thumb[data-cat="Caneca"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 40) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 40) 60%, var(--card) 40%) 100%); }
-.prod-thumb[data-cat="Banner"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 200) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 200) 60%, var(--card) 40%) 100%); }
-.prod-thumb[data-cat="Cartão de Visita"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 90) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 90) 60%, var(--card) 40%) 100%); }
-.prod-thumb[data-cat="Adesivo"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 85) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 85) 60%, var(--card) 40%) 100%); }
-.prod-thumb[data-cat="Outros"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.02 240) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.02 240) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Caneca"], .detail-thumb[data-cat="Caneca"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 40) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 40) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Banner"], .detail-thumb[data-cat="Banner"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 200) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 200) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Cartão de Visita"], .detail-thumb[data-cat="Cartão de Visita"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 90) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 90) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Adesivo"], .detail-thumb[data-cat="Adesivo"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 85) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 85) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Outros"], .detail-thumb[data-cat="Outros"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.02 240) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.02 240) 60%, var(--card) 40%) 100%); }
 .prod-thumb::after {
   content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%;
   background: color-mix(in srgb, var(--violet) 14%, transparent); right: -34px; bottom: -46px;

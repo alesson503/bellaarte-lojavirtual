@@ -1,33 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
 import CartaoConfigurator from './components/CartaoConfigurator';
-import Catalogo from './components/Catalogo';
-import CartModal from './components/CartModal';
-import CheckoutModal from './components/CheckoutModal';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import { WhatsAppIcon } from './icons';
 import { useSiteSettings } from './context/SiteSettingsContext';
 import { useCart } from './context/CartContext';
-import { useToast } from './context/ToastContext';
 import { useWhatsapp } from './context/WhatsappContext';
 import { whatsappLink } from './config';
-import type { CartItem } from './types';
 import heroCanecas from './assets/hero-canecas.jpg';
 
-export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'produtos' | 'contato';
+export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'contato';
 
 export default function StoreApp() {
   const { settings } = useSiteSettings();
   const whatsapp = useWhatsapp();
-  const { toast } = useToast();
-  const { cart, addToCart, removeFromCart } = useCart();
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [produtosFiltro, setProdutosFiltro] = useState('Todos');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
@@ -38,9 +32,19 @@ export default function StoreApp() {
   }
 
   function goProdutos(categoria: string) {
-    setProdutosFiltro(categoria);
-    goPage('produtos');
+    navigate(categoria === 'Todos' ? '/produtos' : `/produtos?categoria=${encodeURIComponent(categoria)}`);
   }
+
+  // Outras páginas (Vitrine/Produto) mandam pra cá com { scrollTo: 'adesivos' | 'cartoes' }
+  // quando o clique era em algo que só existe dentro da Home (configuradores).
+  useEffect(() => {
+    const state = location.state as { scrollTo?: string } | null;
+    if (state?.scrollTo) {
+      goPage('personalize', state.scrollTo);
+      navigate('.', { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (scrollTarget === 'adesivos') adesivosRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,16 +52,9 @@ export default function StoreApp() {
     else window.scrollTo(0, 0);
   }, [page, scrollTarget]);
 
-  // "Comprar agora" — mesma coisa que adicionar ao pedido, só que já abre
-  // direto a tela de finalizar (sem passar pela tela do carrinho no meio).
-  function comprarAgora(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
-    addToCart(nome, preco, quantidade, observacao, arte);
-    setCheckoutOpen(true);
-  }
-
   return (
     <>
-      <Header page={page} onGoPage={goPage} onOpenCart={() => setCartOpen(true)} />
+      <Header page={page} onGoPage={goPage} onOpenCart={() => navigate('/carrinho')} />
 
       {page === 'inicio' && (
         <div className="shell hero">
@@ -167,10 +164,6 @@ export default function StoreApp() {
         </>
       )}
 
-      {page === 'produtos' && (
-        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onComprarAgora={comprarAgora} onGoPersonalize={id => goPage('personalize', id)} whatsapp={whatsapp} />
-      )}
-
       {page === 'contato' && (
         <div className="shell" style={{ paddingBottom: 20, paddingTop: 68 }}>
           <div className="final-cta">
@@ -187,14 +180,6 @@ export default function StoreApp() {
       )}
 
       <Footer />
-
-      <CartModal open={cartOpen} cart={cart} onClose={() => setCartOpen(false)} onRemove={removeFromCart}
-        onCheckout={() => {
-          if (!cart.length) { toast('Seu carrinho está vazio — adicione um produto primeiro.'); return; }
-          setCartOpen(false);
-          setCheckoutOpen(true);
-        }} />
-      <CheckoutModal open={checkoutOpen} cart={cart} onClose={() => setCheckoutOpen(false)} />
     </>
   );
 }

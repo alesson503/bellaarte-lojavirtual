@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import UploadModal from './UploadModal';
 import LoginModal from './LoginModal';
 import Logo from './Logo';
@@ -10,24 +10,25 @@ import { useCart } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
 import type { Page } from '../StoreApp';
 
-const NAV_ITEMS: { page: Page; label: string }[] = [
+// Itens que ainda vivem dentro da Home como seção/âncora (StoreApp.tsx,
+// enquanto a Fase 7 não transforma a Home numa rolagem contínua de verdade).
+const HOME_NAV_ITEMS: { page: Page; label: string }[] = [
   { page: 'inicio', label: 'Início' },
   { page: 'categorias', label: 'Categorias' },
-  { page: 'produtos', label: 'Produtos' },
   { page: 'personalize', label: 'Personalize' },
   { page: 'como', label: 'Como funciona' },
   { page: 'contato', label: 'Contato' },
 ];
 
-// Extraído de StoreApp.tsx — nav ainda navega via `page`/`onGoPage` (mesmo
-// mecanismo de antes) porque /produtos e /carrinho ainda não existem como
-// rotas de verdade; isso muda nas fases que criam essas páginas.
+// Extraído de StoreApp.tsx. "Produtos" e o carrinho já são rotas de verdade
+// (/produtos, /carrinho); os demais itens ainda navegam via `page`/
+// `onGoPage` porque essas seções só existem dentro da Home por enquanto.
 export default function Header({
   page,
   onGoPage,
   onOpenCart,
 }: {
-  page: Page;
+  page: Page | null;
   onGoPage: (next: Page, scrollToId?: string) => void;
   onOpenCart: () => void;
 }) {
@@ -35,9 +36,12 @@ export default function Header({
   const { toast } = useToast();
   const { cart } = useCart();
   const { promocao } = usePromocao();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+
+  const produtosAtivo = location.pathname === '/produtos';
 
   function go(next: Page, scrollToId?: string) {
     onGoPage(next, scrollToId);
@@ -58,7 +62,7 @@ export default function Header({
       )}
       <header className="site">
         <div className="shell nav">
-          <button className="brand" onClick={() => go('inicio')}>
+          <Link className="brand" to="/">
             <Logo size={40} />
             <span className="word">
               Bella <span>Arte</span>
@@ -66,13 +70,14 @@ export default function Header({
                 Gráfica &amp; Personalizados
               </small>
             </span>
-          </button>
+          </Link>
           <nav className="links">
-            {NAV_ITEMS.map(item => (
+            {HOME_NAV_ITEMS.map(item => (
               <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => go(item.page)}>
                 {item.label}
               </a>
             ))}
+            <Link className={produtosAtivo ? 'active' : ''} to="/produtos">Produtos</Link>
           </nav>
           <div className="nav-right">
             <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
@@ -93,11 +98,12 @@ export default function Header({
           </div>
         </div>
         <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
-          {NAV_ITEMS.map(item => (
+          {HOME_NAV_ITEMS.map(item => (
             <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => go(item.page)}>
               {item.label}
             </a>
           ))}
+          <Link className={produtosAtivo ? 'active' : ''} to="/produtos" onClick={() => setMobileNavOpen(false)}>Produtos</Link>
         </nav>
       </header>
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
