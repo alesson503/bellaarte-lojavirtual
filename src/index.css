@@ -1,54 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  /* Paleta "Bella Arte" — rosa de marca (oklch, hue 350) como única cor de origem;
-     tons derivados (blush/soft/deep) vêm de color-mix a partir dela, pra tudo ficar
-     consistente. "violet"/"blush" mantêm os nomes de variável (usados em todo o CSS). */
-  --ink: oklch(20% 0.02 350); --ink-soft: oklch(38% 0.05 350); --graphite: oklch(52% 0.02 350); --graphite-faint: oklch(66% 0.015 350);
-  --paper: oklch(99% 0.004 350); --card: oklch(100% 0 0); --line: oklch(92% 0.02 350);
-  --violet: oklch(72% 0.14 350); --violet-deep: oklch(56% 0.16 350); --violet-ink: oklch(100% 0 0); --violet-soft: color-mix(in oklch, var(--violet) 10%, white);
-  --blush: color-mix(in oklch, var(--violet) 12%, white); --blush-line: color-mix(in oklch, var(--violet) 28%, white); --blush-deep: color-mix(in oklch, var(--violet) 80%, black);
-  --amber: oklch(50% 0.15 60); --amber-bg: oklch(94% 0.06 85);
+  /* Redesign 2026-08 — paleta bege/rosa aprovada em prévia (mockup de gráfica
+     que o dono trouxe como referência). Nomes de variável antigos (violet/blush)
+     mantidos de propósito — usados em todo o CSS, trocar só o valor evita
+     reescrever cada componente. */
+  --ink: #241F1B; --ink-soft: #4A4038; --graphite: #8C8074; --graphite-faint: #B4A996;
+  --paper: #F3ECE0; --card: #FFFFFF; --line: #E8DECB;
+  --violet: #DD6F98; --violet-deep: #B8496F; --violet-ink: #FFFFFF; --violet-soft: color-mix(in srgb, var(--violet) 12%, white);
+  --blush: #EFDECA; --blush-line: #E8DECB; --blush-deep: #A83D63;
+  --amber: #B45309; --amber-bg: #FEF3C7;
   --corte: oklch(52% 0.15 40); --corte-bg: oklch(94% 0.03 40);
   --seguranca: oklch(52% 0.1 165); --seguranca-bg: oklch(94% 0.03 165);
-  --shadow: 0 1px 2px rgba(43,21,33,0.05), 0 8px 24px -12px rgba(43,21,33,0.18);
-  --shadow-lift: 0 20px 44px -20px rgba(43,21,33,0.32);
+  --shadow: 0 1px 2px rgba(36,31,27,0.05), 0 10px 26px -14px rgba(36,31,27,0.22);
+  --shadow-lift: 0 22px 46px -20px rgba(36,31,27,0.34);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: oklch(93% 0.02 350); --ink-soft: oklch(82% 0.05 350); --graphite: oklch(68% 0.03 350); --graphite-faint: oklch(50% 0.02 350);
-    --paper: oklch(18% 0.02 350); --card: oklch(22% 0.03 350); --line: oklch(30% 0.04 350);
-    --violet: oklch(72% 0.16 350); --violet-deep: oklch(80% 0.13 350); --violet-ink: oklch(22% 0.03 350); --violet-soft: color-mix(in oklch, var(--violet) 18%, var(--card));
-    --blush: color-mix(in oklch, var(--violet) 20%, var(--card)); --blush-line: color-mix(in oklch, var(--violet) 35%, var(--card)); --blush-deep: oklch(68% 0.16 350);
-    --amber: oklch(85% 0.12 85); --amber-bg: oklch(24% 0.05 70);
+    --ink: #F3ECE0; --ink-soft: #D9CDBB; --graphite: #A89987; --graphite-faint: #7A6E5E;
+    --paper: #1B1712; --card: #262019; --line: #3A3225;
+    --violet: #EA88AB; --violet-deep: #F2A9C2; --violet-ink: #1B1712; --violet-soft: color-mix(in srgb, var(--violet) 18%, var(--card));
+    --blush: #332C22; --blush-line: #3A3225; --blush-deep: #F2A9C2;
+    --amber: #FCD34D; --amber-bg: #3A2E12;
     --corte: oklch(70% 0.12 45); --corte-bg: oklch(24% 0.04 40);
     --seguranca: oklch(75% 0.1 165); --seguranca-bg: oklch(22% 0.04 165);
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
-    --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 26px -14px rgba(0,0,0,0.5);
+    --shadow-lift: 0 22px 46px -20px rgba(0,0,0,0.6);
   }
 }
 :root[data-theme="dark"] {
-  --ink: oklch(93% 0.02 350); --ink-soft: oklch(82% 0.05 350); --graphite: oklch(68% 0.03 350); --graphite-faint: oklch(50% 0.02 350);
-  --paper: oklch(18% 0.02 350); --card: oklch(22% 0.03 350); --line: oklch(30% 0.04 350);
-  --violet: oklch(72% 0.16 350); --violet-deep: oklch(80% 0.13 350); --violet-ink: oklch(22% 0.03 350); --violet-soft: color-mix(in oklch, var(--violet) 18%, var(--card));
-  --blush: color-mix(in oklch, var(--violet) 20%, var(--card)); --blush-line: color-mix(in oklch, var(--violet) 35%, var(--card)); --blush-deep: oklch(68% 0.16 350);
-  --amber: oklch(85% 0.12 85); --amber-bg: oklch(24% 0.05 70);
+  --ink: #F3ECE0; --ink-soft: #D9CDBB; --graphite: #A89987; --graphite-faint: #7A6E5E;
+  --paper: #1B1712; --card: #262019; --line: #3A3225;
+  --violet: #EA88AB; --violet-deep: #F2A9C2; --violet-ink: #1B1712; --violet-soft: color-mix(in srgb, var(--violet) 18%, var(--card));
+  --blush: #332C22; --blush-line: #3A3225; --blush-deep: #F2A9C2;
+  --amber: #FCD34D; --amber-bg: #3A2E12;
   --corte: oklch(70% 0.12 45); --corte-bg: oklch(24% 0.04 40);
   --seguranca: oklch(75% 0.1 165); --seguranca-bg: oklch(22% 0.04 165);
-  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
-  --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 26px -14px rgba(0,0,0,0.5);
+  --shadow-lift: 0 22px 46px -20px rgba(0,0,0,0.6);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);
-  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .font-serif-display, .serif {
-  font-family: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 800;
 }
 .font-mono-data, .mono {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
@@ -90,17 +92,26 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* ── nav ── */
 header.site { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; }
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; flex-wrap: wrap; }
+@media (max-width: 480px) {
+  .nav-right { gap: 6px; }
+  .cart-pill { padding: 8px 10px; }
+}
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); background: none; border: none; cursor: pointer; padding: 0; }
 .brand-logo { object-fit: contain; flex-shrink: 0; }
 .brand .word { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
 .brand .word span { color: var(--violet); }
-nav.links { display: flex; align-items: center; gap: 24px; }
-nav.links a { color: var(--graphite); text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; position: relative; padding-bottom: 4px; }
-nav.links a:hover { color: var(--violet); }
-nav.links a.active { color: var(--violet); }
-nav.links a.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; background: var(--violet); border-radius: 2px; }
-@media (max-width: 860px) { nav.links { display: none; } }
+.header-search { max-width: 520px; }
+@media (max-width: 860px) { .header-search { display: none; } }
+.mobile-nav .header-search-mobile { display: none; flex: none; margin: 4px 0 10px; }
+@media (max-width: 860px) { .mobile-nav .header-search-mobile { display: block; } }
+.cat-nav-row {
+  max-width: 1180px; margin: 0 auto; padding: 11px 28px; display: flex; gap: 26px; font-size: 13px; font-weight: 700;
+  color: var(--ink-soft); border-top: 1px solid var(--line);
+}
+.cat-nav-row a { cursor: pointer; text-decoration: none; color: inherit; }
+.cat-nav-row a:hover, .cat-nav-row a.active { color: var(--violet-deep); }
+@media (max-width: 860px) { .cat-nav-row { display: none; } }
 .nav-right { display: flex; align-items: center; gap: 10px; }
 .hamburger-btn {
   display: none; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0;

@@ -1,28 +1,20 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import UploadModal from './UploadModal';
 import LoginModal from './LoginModal';
 import Logo from './Logo';
-import { UserIcon } from '../icons';
+import { SearchIcon, UserIcon } from '../icons';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCart } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
+import { useProdutos } from '../hooks/useProdutos';
 import type { Page } from '../StoreApp';
 
-// Itens que ainda vivem dentro da Home como seção/âncora (StoreApp.tsx,
-// enquanto a Fase 7 não transforma a Home numa rolagem contínua de verdade).
-const HOME_NAV_ITEMS: { page: Page; label: string }[] = [
-  { page: 'inicio', label: 'Início' },
-  { page: 'categorias', label: 'Categorias' },
-  { page: 'personalize', label: 'Personalize' },
-  { page: 'como', label: 'Como funciona' },
-  { page: 'contato', label: 'Contato' },
-];
-
 // Extraído de StoreApp.tsx. "Produtos" e o carrinho já são rotas de verdade
-// (/produtos, /carrinho); os demais itens ainda navegam via `page`/
-// `onGoPage` porque essas seções só existem dentro da Home por enquanto.
+// (/produtos, /carrinho); "Início" volta pra Home. As demais páginas-seção
+// (Como funciona/Contato) saíram do cabeçalho — o menu principal agora é
+// por categoria (redesign aprovado), igual navegar num catálogo de verdade.
 export default function Header({
   page,
   onGoPage,
@@ -36,15 +28,25 @@ export default function Header({
   const { toast } = useToast();
   const { cart } = useCart();
   const { promocao } = usePromocao();
+  const { catalogo } = useProdutos();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [busca, setBusca] = useState('');
 
-  const produtosAtivo = location.pathname === '/produtos';
+  const categorias = Array.from(new Set(catalogo.map(p => p.categoria))).sort();
+  const categoriaAtiva = location.pathname === '/produtos' ? new URLSearchParams(location.search).get('categoria') : null;
 
-  function go(next: Page, scrollToId?: string) {
-    onGoPage(next, scrollToId);
+  function irParaCategoria(categoria: string | null) {
+    navigate(categoria ? `/produtos?categoria=${encodeURIComponent(categoria)}` : '/produtos');
+    setMobileNavOpen(false);
+  }
+
+  function buscar(e: FormEvent) {
+    e.preventDefault();
+    navigate(busca.trim() ? `/produtos?busca=${encodeURIComponent(busca.trim())}` : '/produtos');
     setMobileNavOpen(false);
   }
 
@@ -62,7 +64,7 @@ export default function Header({
       )}
       <header className="site">
         <div className="shell nav">
-          <Link className="brand" to="/">
+          <Link className="brand" to="/" onClick={() => onGoPage('inicio')}>
             <Logo size={40} />
             <span className="word">
               Bella <span>Arte</span>
@@ -71,14 +73,10 @@ export default function Header({
               </small>
             </span>
           </Link>
-          <nav className="links">
-            {HOME_NAV_ITEMS.map(item => (
-              <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => go(item.page)}>
-                {item.label}
-              </a>
-            ))}
-            <Link className={produtosAtivo ? 'active' : ''} to="/produtos">Produtos</Link>
-          </nav>
+          <form className="search-box header-search" onSubmit={buscar}>
+            <SearchIcon />
+            <input type="text" placeholder="Buscar canecas, adesivos, cartões e mais..." value={busca} onChange={e => setBusca(e.target.value)} />
+          </form>
           <div className="nav-right">
             <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
             <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
@@ -97,13 +95,21 @@ export default function Header({
             )}
           </div>
         </div>
-        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
-          {HOME_NAV_ITEMS.map(item => (
-            <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => go(item.page)}>
-              {item.label}
-            </a>
+        <nav className="cat-nav-row">
+          {categorias.map(cat => (
+            <a key={cat} className={categoriaAtiva === cat ? 'active' : ''} onClick={() => irParaCategoria(cat)}>{cat}</a>
           ))}
-          <Link className={produtosAtivo ? 'active' : ''} to="/produtos" onClick={() => setMobileNavOpen(false)}>Produtos</Link>
+        </nav>
+        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
+          <form className="search-box header-search-mobile" onSubmit={buscar}>
+            <SearchIcon />
+            <input type="text" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
+          </form>
+          <a className={page === 'inicio' ? 'active' : ''} onClick={() => { onGoPage('inicio'); navigate('/'); setMobileNavOpen(false); }}>Início</a>
+          <a className={location.pathname === '/produtos' && !categoriaAtiva ? 'active' : ''} onClick={() => irParaCategoria(null)}>Todos os produtos</a>
+          {categorias.map(cat => (
+            <a key={cat} className={categoriaAtiva === cat ? 'active' : ''} onClick={() => irParaCategoria(cat)}>{cat}</a>
+          ))}
         </nav>
       </header>
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />

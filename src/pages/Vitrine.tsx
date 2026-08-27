@@ -14,7 +14,7 @@ export default function Vitrine() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filtro = searchParams.get('categoria') ?? 'Todos';
-  const [busca, setBusca] = useState('');
+  const [busca, setBusca] = useState(searchParams.get('busca') ?? '');
   const { catalogo } = useProdutos();
   const { addToCart } = useCart();
 
