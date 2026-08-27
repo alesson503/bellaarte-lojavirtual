@@ -47,48 +47,41 @@ export default function Vitrine() {
       <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
       <section id="catalogo" className="band">
         <div className="shell">
-          <div className="section-head reveal in">
-            <div className="kicker">Catálogo</div>
-            <h2 className="serif">Catálogo completo</h2>
-            <p>Produtos com preço direto do nosso sistema — escolhe a opção e o preço muda na hora.</p>
-          </div>
-
-          <div className="toolbar reveal in">
-            <div className="search-box">
-              <SearchIcon />
-              <input type="text" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
-            </div>
-            <div className="pills">
-              {categorias.map(cat => {
-                const count = cat === 'Todos' ? catalogo.length : catalogo.filter(p => p.categoria === cat).length;
-                return (
-                  <button key={cat} className={`pill ${filtro === cat ? 'on' : ''}`} onClick={() => setFiltro(cat)}>
-                    {cat} <span className="n">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="result-count">{filtrados.length} produto{filtrados.length !== 1 ? 's' : ''}</div>
-
-          <div className="gallery">
-            {filtrados.length ? (
-              filtrados.map((p, i) => (
-                <ProductCard
-                  key={('id' in p ? p.id : p.nome) + i}
-                  produto={p}
-                  onAdd={addToCart}
-                  onGoPersonalize={onGoPersonalize}
-                  onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
-                />
-              ))
-            ) : (
-              <div className="empty">
-                <SearchIcon />
-                Nenhum produto encontrado com esse filtro.
+          <div className="crumbs"><span className="link" onClick={() => navigate('/')}>Início</span> / <span className="now">Produtos</span></div>
+          <div className="cat-layout">
+            <div>
+              <input className="side-search" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
+              <div className="side-title">Categoria</div>
+              <div className="side-list">
+                {categorias.map(cat => (
+                  <button key={cat} className={filtro === cat ? 'on' : ''} onClick={() => setFiltro(cat)}>{cat}</button>
+                ))}
               </div>
-            )}
+            </div>
+            <div>
+              <div className="section-title-row">
+                <h2 className="serif">Todos os produtos</h2>
+                <span className="result-count">{filtrados.length} produto{filtrados.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="gallery cat-layout-grid">
+                {filtrados.length ? (
+                  filtrados.map((p, i) => (
+                    <ProductCard
+                      key={('id' in p ? p.id : p.nome) + i}
+                      produto={p}
+                      onAdd={addToCart}
+                      onGoPersonalize={onGoPersonalize}
+                      onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
+                    />
+                  ))
+                ) : (
+                  <div className="empty">
+                    <SearchIcon />
+                    Nenhum produto encontrado com esse filtro.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>

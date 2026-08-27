@@ -47,6 +47,10 @@ export default function Produto() {
     );
   }
 
+  function irParaCategoria() {
+    navigate(`/produtos?categoria=${encodeURIComponent(produto!.categoria)}`);
+  }
+
   const corObj = produto.cores?.find(c => c.nome === corSelecionada) ?? null;
   const fotoExibida = corObj?.foto || produto.imagem;
   const nomeComCor = produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome;
@@ -65,89 +69,95 @@ export default function Produto() {
   return (
     <>
       <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
-      <div className="shell" style={{ paddingTop: 40, paddingBottom: 68, maxWidth: 640 }}>
-        <button className="btn-ghost" style={{ marginBottom: 20 }} onClick={() => navigate('/produtos')}>← Voltar pro catálogo</button>
-
-        <div className="detail-thumb" data-cat={produto.categoria}>
-          <span className="cat-tag">{produto.categoria}</span>
-          {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
-          {fotoExibida ? (
-            <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
-          ) : (
-            <CategoryIcon categoria={produto.categoria} />
-          )}
+      <div className="shell" style={{ paddingTop: 4 }}>
+        <div className="crumbs">
+          <span className="link" onClick={() => navigate('/')}>Início</span> / <span className="link" onClick={irParaCategoria}>{produto.categoria}</span> / <span className="now">{produto.nome}</span>
         </div>
-
-        <h2 className="serif">{produto.nome}</h2>
-        {produto.descricao && <p className="modal-sub" style={{ marginBottom: produto.especificacoes?.length ? 8 : 16 }}>{produto.descricao}</p>}
-
-        {produto.especificacoes?.length ? (
-          <ul className="detail-specs">
-            {produto.especificacoes.map((e, i) => (
-              <li key={i}><b>{e.chave}:</b> {e.valor}</li>
-            ))}
-          </ul>
-        ) : null}
-
-        {produto.cores?.length ? (
-          <div className="field-group">
-            <label>Cor</label>
-            <div className="swatch-row">
-              {produto.cores.map(cor => (
-                <button
-                  key={cor.nome}
-                  className={`swatch ${corSelecionada === cor.nome ? 'on' : ''}`}
-                  onClick={() => setCorSelecionada(cor.nome)}
-                >
-                  {cor.foto && <img src={cor.foto} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
-                  {cor.nome}
-                </button>
-              ))}
-            </div>
+        <div className="pd-layout">
+          <div className="detail-thumb" data-cat={produto.categoria}>
+            <span className="cat-tag">{produto.categoria}</span>
+            {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
+            {fotoExibida ? (
+              <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
+            ) : (
+              <CategoryIcon categoria={produto.categoria} />
+            )}
           </div>
-        ) : null}
 
-        <div className="field-group">
-          <label>Quantidade</label>
-          <div className="qty-stepper">
-            <button type="button" onClick={() => setQuantidade(q => Math.max(1, q - 1))}>−</button>
-            <span>{quantidade}</span>
-            <button type="button" onClick={() => setQuantidade(q => q + 1)}>+</button>
-          </div>
-        </div>
-
-        <div className="field-group">
-          <label>Observação (opcional)</label>
-          <textarea
-            rows={2} value={observacao} onChange={e => setObservacao(e.target.value)}
-            placeholder="Ex.: essa unidade é com a foto da Maria — se pedir mais de uma arte diferente, adicione cada uma separada com sua observação"
-          />
-        </div>
-
-        <div className="price-row" style={{ marginTop: 4 }}>
           <div>
-            {quantidade > 1 && <div className="from">{fmt(produto.preco)} cada</div>}
-            <div className="p" style={{ fontSize: 24 }}>
-              {produto.precoOriginal != null && produto.precoOriginal > produto.preco && (
-                <span className="old-price">{fmt(produto.precoOriginal * quantidade)}</span>
-              )}
-              {fmt(produto.preco * quantidade)}
+            <div className="pd-cat">{produto.categoria}</div>
+            <h1 className="serif" style={{ fontSize: 26, marginBottom: 6 }}>{produto.nome}</h1>
+            {produto.descricao && <p className="modal-sub" style={{ marginBottom: produto.especificacoes?.length ? 8 : 16 }}>{produto.descricao}</p>}
+
+            {produto.especificacoes?.length ? (
+              <ul className="detail-specs">
+                {produto.especificacoes.map((e, i) => (
+                  <li key={i}><b>{e.chave}:</b> {e.valor}</li>
+                ))}
+              </ul>
+            ) : null}
+
+            {produto.cores?.length ? (
+              <div className="field-group">
+                <label>Cor</label>
+                <div className="swatch-row">
+                  {produto.cores.map(cor => (
+                    <button
+                      key={cor.nome}
+                      className={`swatch ${corSelecionada === cor.nome ? 'on' : ''}`}
+                      onClick={() => setCorSelecionada(cor.nome)}
+                    >
+                      {cor.foto && <img src={cor.foto} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
+                      {cor.nome}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="field-group">
+              <label>Quantidade</label>
+              <div className="qty-stepper">
+                <button type="button" onClick={() => setQuantidade(q => Math.max(1, q - 1))}>−</button>
+                <span>{quantidade}</span>
+                <button type="button" onClick={() => setQuantidade(q => q + 1)}>+</button>
+              </div>
+            </div>
+
+            <div className="field-group">
+              <label>Observação (opcional)</label>
+              <textarea
+                rows={2} value={observacao} onChange={e => setObservacao(e.target.value)}
+                placeholder="Ex.: essa unidade é com a foto da Maria — se pedir mais de uma arte diferente, adicione cada uma separada com sua observação"
+              />
+            </div>
+
+            <div className="price-row" style={{ marginTop: 4 }}>
+              <div>
+                {quantidade > 1 && <div className="from">{fmt(produto.preco)} cada</div>}
+                <div className="p" style={{ fontSize: 24 }}>
+                  {produto.precoOriginal != null && produto.precoOriginal > produto.preco && (
+                    <span className="old-price">{fmt(produto.precoOriginal * quantidade)}</span>
+                  )}
+                  {fmt(produto.preco * quantidade)}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="add-btn btn-flex" onClick={adicionar}>Adicionar ao pedido</button>
+              <button className="buy-now-btn btn-flex" onClick={comprarAgora}>⚡ Comprar agora</button>
+            </div>
+            <div className="modal-actions" style={{ marginTop: 10 }}>
+              <a
+                className="btn-outline-full btn-flex" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
+                href={whatsappLink(whatsapp, mensagemWhats)}
+                target="_blank" rel="noopener noreferrer"
+              >
+                <WhatsAppIcon /> Comprar pelo WhatsApp
+              </a>
             </div>
           </div>
-        </div>
-
-        <div className="modal-actions">
-          <button className="add-btn btn-flex" onClick={adicionar}>Adicionar ao pedido</button>
-          <button className="buy-now-btn btn-flex" onClick={comprarAgora}>⚡ Comprar agora</button>
-        </div>
-        <div className="modal-actions" style={{ marginTop: 10 }}>
-          <a
-            className="btn-outline-full btn-flex" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
-            href={whatsappLink(whatsapp, mensagemWhats)}
-            target="_blank" rel="noopener noreferrer"
-          >
-            <WhatsAppIcon /> Comprar pelo WhatsApp
-          </a>
         </div>
       </div>
       <Footer />

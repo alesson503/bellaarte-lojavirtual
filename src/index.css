@@ -273,6 +273,20 @@ section { padding: 68px 0; }
 .result-count { font-size: 12px; color: var(--graphite-faint); padding: 14px 0 18px; }
 
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+
+/* ── catálogo (/produtos): barra lateral com busca + categoria ── */
+.section-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.section-title-row h2 { font-size: 22px; }
+.cat-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 34px; padding-bottom: 60px; }
+@media (max-width: 760px) { .cat-layout { grid-template-columns: minmax(0, 1fr); } }
+.side-search { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 13px; font-size: 13px; margin-bottom: 20px; font-family: inherit; background: var(--card); color: var(--ink); }
+.side-search:focus { outline: none; border-color: var(--violet); }
+.side-title { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--graphite); margin-bottom: 10px; }
+.side-list { display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 760px) { .side-list { flex-direction: row; flex-wrap: wrap; } }
+.side-list button { text-align: left; background: none; border: none; padding: 9px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+.side-list button.on { background: var(--violet); color: var(--violet-ink); }
+.cat-layout-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .prod-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); transition: transform 0.15s ease, box-shadow 0.15s ease; display: flex; flex-direction: column; }
 .prod-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
 .prod-card-click { cursor: pointer; }
@@ -282,6 +296,16 @@ section { padding: 68px 0; }
   border-radius: 14px; margin: -6px -6px 18px;
 }
 .detail-thumb svg { width: 28%; height: 28%; stroke: var(--violet-deep); stroke-width: 1.3; }
+
+/* ── página de produto (/produto/:id): imagem grande + migalha de pão ── */
+.crumbs { font-size: 12px; color: var(--graphite); padding: 4px 0 18px; }
+.crumbs .link { cursor: pointer; }
+.crumbs .link:hover { color: var(--violet-deep); }
+.crumbs .now { color: var(--violet-deep); font-weight: 700; }
+.pd-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; padding-bottom: 60px; }
+@media (max-width: 800px) { .pd-layout { grid-template-columns: minmax(0, 1fr); } }
+.pd-layout .detail-thumb { margin: 0; }
+.pd-cat { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--violet-deep); margin-bottom: 8px; }
 .qty-stepper { display: flex; align-items: center; gap: 12px; }
 .qty-stepper button {
   width: 32px; height: 32px; border-radius: 9px; border: 1.5px solid var(--line); background: var(--paper);
