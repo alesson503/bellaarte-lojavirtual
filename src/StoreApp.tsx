@@ -1,27 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
 import CartaoConfigurator from './components/CartaoConfigurator';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { WhatsAppIcon } from './icons';
+import ProductCard from './components/ProductCard';
+import { CategoryIcon, SearchIcon, WhatsAppIcon } from './icons';
 import { useSiteSettings } from './context/SiteSettingsContext';
 import { useCart } from './context/CartContext';
 import { useWhatsapp } from './context/WhatsappContext';
+import { useProdutos } from './hooks/useProdutos';
 import { whatsappLink } from './config';
 import heroCanecas from './assets/hero-canecas.jpg';
 
-export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'contato';
+export type Page = 'inicio' | 'como' | 'personalize' | 'contato';
 
 export default function StoreApp() {
   const { settings } = useSiteSettings();
   const whatsapp = useWhatsapp();
   const { addToCart } = useCart();
+  const { catalogo } = useProdutos();
   const navigate = useNavigate();
   const location = useLocation();
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+
+  const categorias = useMemo(() => Array.from(new Set(catalogo.map(p => p.categoria))).sort(), [catalogo]);
+  const maisPedidos = useMemo(() => catalogo.slice(0, 8), [catalogo]);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
@@ -35,16 +41,22 @@ export default function StoreApp() {
     navigate(categoria === 'Todos' ? '/produtos' : `/produtos?categoria=${encodeURIComponent(categoria)}`);
   }
 
-  // Outras páginas (Vitrine/Produto) mandam pra cá com { scrollTo: 'adesivos' | 'cartoes' }
-  // quando o clique era em algo que só existe dentro da Home (configuradores).
+  // Outras páginas (Vitrine/Produto/Carrinho, e o próprio Footer) mandam pra
+  // cá com { scrollTo: 'adesivos' | 'cartoes' } quando o clique era em algo
+  // que só existe dentro da Home (configuradores), ou { page: 'como' | 'contato' }
+  // pra abrir direto uma das seções-página. Depende de `location` (não só
+  // do mount) pra funcionar mesmo clicando de novo já estando na Home.
   useEffect(() => {
-    const state = location.state as { scrollTo?: string } | null;
+    const state = location.state as { scrollTo?: string; page?: Page } | null;
     if (state?.scrollTo) {
       goPage('personalize', state.scrollTo);
       navigate('.', { replace: true, state: null });
+    } else if (state?.page) {
+      goPage(state.page);
+      navigate('.', { replace: true, state: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location]);
 
   useEffect(() => {
     if (scrollTarget === 'adesivos') adesivosRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,43 +105,41 @@ export default function StoreApp() {
             <div><span className="ic">⚡</span>Produção em 48h</div>
             <div><span className="ic">💬</span>Atendimento direto</div>
           </div>
-        </div>
-      )}
 
-      {page === 'categorias' && (
-        <section>
-          <div className="shell">
-            <div className="section-head">
-              <div className="kicker">Categorias</div>
-              <h2 className="serif">O que a gente faz por aqui</h2>
-              <p>Do cartão que vai na carteira ao adesivo que vai na garrafinha — clique numa categoria pra ir direto pra ela no catálogo.</p>
-            </div>
-            <div className="rail-wrap">
-            <div className="rail">
-              <button className="cat-card tone-a" onClick={() => goPage('personalize', 'adesivos')}>
-                <div className="ic">🏷️</div>
-                <b>Adesivos</b><span>UV e Vinil — recortado, refilado, laminado</span>
+          <div className="cats-title serif">O que você precisa hoje?</div>
+          <div className="cats-row">
+            {categorias.map(cat => (
+              <button key={cat} className="cat-circle" onClick={() => goProdutos(cat)}>
+                <div className="ic"><CategoryIcon categoria={cat} /></div>
+                <b>{cat}</b>
               </button>
-              <button className="cat-card tone-b" onClick={() => goPage('personalize', 'cartoes')}>
-                <div className="ic">🪪</div>
-                <b>Cartões de Visita</b><span>100 a 1000 un, com ou sem verniz</span>
-              </button>
-              <button className="cat-card tone-c" onClick={() => goProdutos('Caneca')}>
-                <div className="ic">☕</div>
-                <b>Canecas</b><span>Branca, 180ml, alça colorida</span>
-              </button>
-              <button className="cat-card tone-a" onClick={() => goProdutos('Banner')}>
-                <div className="ic">🚩</div>
-                <b>Banners</b><span>Lona avulsa e Wind Banner (P/G/GG)</span>
-              </button>
-              <button className="cat-card tone-b" onClick={() => goProdutos('Outros')}>
-                <div className="ic">✨</div>
-                <b>Diversos</b><span>Panfletos, placas PS, polaroid e mais</span>
-              </button>
-            </div>
-            </div>
+            ))}
+            <button className="cat-circle" onClick={() => goProdutos('Todos')}>
+              <div className="ic"><SearchIcon /></div>
+              <b>Ver tudo</b>
+            </button>
           </div>
-        </section>
+
+          {maisPedidos.length > 0 && (
+            <>
+              <div className="section-title-row">
+                <h2 className="serif">Mais pedidos</h2>
+                <a onClick={() => goProdutos('Todos')}>Ver todos →</a>
+              </div>
+              <div className="gallery">
+                {maisPedidos.map((p, i) => (
+                  <ProductCard
+                    key={('id' in p ? p.id : p.nome) + i}
+                    produto={p}
+                    onAdd={addToCart}
+                    onGoPersonalize={id => goPage('personalize', id)}
+                    onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {page === 'como' && (
