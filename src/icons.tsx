@@ -6,37 +6,37 @@ export function CategoryIcon({ categoria }: { categoria: Categoria | string }) {
   switch (categoria) {
     case 'Adesivo':
       return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="8" />
-          <path d="M17 7l3-3M17 7l3 1-1 3" />
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7Z" />
+          <path d="M14 3v6a1 1 0 0 0 1 1h6" />
         </svg>
       );
     case 'Banner':
       return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="3" width="16" height="14" rx="1.5" />
-          <path d="M9 21h6M12 17v4" />
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5h16v9a2 2 0 0 1-2 2H8l-4 4z" />
         </svg>
       );
     case 'Caneca':
       return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M8 3h8l1 4H7l1-4z" />
-          <path d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7z" />
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h13v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4Z" />
+          <path d="M17 7h2a2.5 2.5 0 0 1 0 5h-2" />
         </svg>
       );
     case 'Cartão de Visita':
       return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="7" width="18" height="11" rx="2" />
-          <path d="M3 10h18" />
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="m4 6 8 7 8-7" />
         </svg>
       );
     default:
       return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="4" width="16" height="16" rx="2.5" />
-          <path d="M4 9h16M9 4v16" />
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 9V4h12v5" />
+          <rect x="4" y="9" width="16" height="7" rx="1.5" />
+          <rect x="7" y="16" width="10" height="5" />
         </svg>
       );
   }
