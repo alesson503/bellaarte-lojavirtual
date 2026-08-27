@@ -9,17 +9,17 @@ import CheckoutModal from './components/CheckoutModal';
 import UploadModal from './components/UploadModal';
 import LoginModal from './components/LoginModal';
 import Logo from './components/Logo';
-import Toast from './components/Toast';
 import { WhatsAppIcon, UserIcon } from './icons';
 import { useAuth } from './auth/AuthContext';
 import { useSiteSettings } from './context/SiteSettingsContext';
 import { usePromocao } from './context/PromocaoContext';
-import { getConfig } from './services/configService';
-import { WHATSAPP_NUMERO_PADRAO, whatsappLink } from './config';
+import { useCart } from './context/CartContext';
+import { useToast } from './context/ToastContext';
+import { useWhatsapp } from './context/WhatsappContext';
+import { whatsappLink } from './config';
 import type { CartItem } from './types';
 import heroCanecas from './assets/hero-canecas.jpg';
 
-export type { CartItem };
 export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'produtos' | 'contato';
 
 const NAV_ITEMS: { page: Page; label: string }[] = [
@@ -35,32 +35,20 @@ export default function StoreApp() {
   const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
   const { promocao } = usePromocao();
-  const [whatsapp, setWhatsapp] = useState(WHATSAPP_NUMERO_PADRAO);
-  useEffect(() => {
-    getConfig().then(c => { if (c.whatsapp_numero) setWhatsapp(c.whatsapp_numero); }).catch(() => { /* mantém o padrão */ });
-  }, []);
+  const whatsapp = useWhatsapp();
+  const { toast } = useToast();
+  const { cart, addToCart, removeFromCart } = useCart();
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [produtosFiltro, setProdutosFiltro] = useState('Todos');
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  const [toastShow, setToastShow] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
-
-  function toast(msg: string) {
-    setToastMsg(msg);
-    setToastShow(true);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastShow(false), 2600);
-  }
 
   function goPage(next: Page, scrollToId?: string) {
     setPage(next);
@@ -79,21 +67,11 @@ export default function StoreApp() {
     else window.scrollTo(0, 0);
   }, [page, scrollTarget]);
 
-  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
-    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined }]);
-    const totalItem = preco * quantidade;
-    toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-  }
-
   // "Comprar agora" — mesma coisa que adicionar ao pedido, só que já abre
   // direto a tela de finalizar (sem passar pela tela do carrinho no meio).
   function comprarAgora(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
     addToCart(nome, preco, quantidade, observacao, arte);
     setCheckoutOpen(true);
-  }
-
-  function removeFromCart(idx: number) {
-    setCart(prev => prev.filter((_, i) => i !== idx));
   }
 
   return (
@@ -290,7 +268,6 @@ export default function StoreApp() {
       <CheckoutModal open={checkoutOpen} cart={cart} onClose={() => setCheckoutOpen(false)} />
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={nome => { setLoginOpen(false); toast(`✓ Bem-vindo(a), ${nome.split(' ')[0]}!`); }} />
-      <Toast message={toastMsg} show={toastShow} />
       <a className="whats-float" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte.')}
         target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp">
         <WhatsAppIcon size={28} />

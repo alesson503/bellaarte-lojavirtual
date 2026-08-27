@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria, type SimpleProduct } from '../data';
-import { listLojaProducts } from '../services/productsService';
+import { useMemo, useState } from 'react';
+import type { SimpleProduct } from '../data';
+import { useProdutos } from '../hooks/useProdutos';
 import { SearchIcon } from '../icons';
 import ProductCard from './ProductCard';
 import ProductDetailModal from './ProductDetailModal';
@@ -21,32 +21,7 @@ export default function Catalogo({
   const [filtro, setFiltro] = useState(filtroInicial);
   const [busca, setBusca] = useState('');
   const [detalhe, setDetalhe] = useState<SimpleProduct | null>(null);
-  // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
-  // por qualquer motivo, cai pro catálogo fixo em vez de mostrar vitrine vazia.
-  const [simples, setSimples] = useState(SIMPLES);
-
-  useEffect(() => {
-    listLojaProducts()
-      .then(produtos => {
-        if (produtos.length === 0) return; // ERP ainda não sincronizou — mantém o fallback
-        setSimples(produtos.map(p => ({
-          tipo: 'simples' as const,
-          nome: p.nome,
-          categoria: p.categoria as Categoria,
-          preco: p.preco,
-          unidade: p.unidade ?? undefined,
-          imagem: p.imagem_url ?? undefined,
-          precoOriginal: p.desconto_percentual > 0 ? p.preco_original : undefined,
-          descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
-          descricao: p.descricao ?? undefined,
-          cores: p.cores?.length ? p.cores : undefined,
-          especificacoes: p.especificacoes?.length ? p.especificacoes : undefined,
-        })));
-      })
-      .catch(() => { /* mantém o catálogo fixo (fallback) */ });
-  }, []);
-
-  const catalogo: Produto[] = useMemo(() => [...LINKS, ...MULTI, ...MEDIDA, ...simples], [simples]);
+  const { catalogo } = useProdutos();
   const categorias = useMemo(() => ['Todos', ...Array.from(new Set(catalogo.map(p => p.categoria))).sort()], [catalogo]);
 
   const filtrados = useMemo(() => {
