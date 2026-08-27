@@ -33,7 +33,7 @@ export default function ProductCard({
     const desdeComPromo = produto.desde * fator;
     return (
       <div className="prod-card">
-        <div className="prod-thumb">
+        <div className="prod-thumb" data-cat={produto.categoria}>
           <span className="cat-tag">{produto.categoria}</span>
           {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
           <CategoryIcon categoria={produto.categoria} />
@@ -62,7 +62,7 @@ export default function ProductCard({
 
   return (
     <div className="prod-card prod-card-click" onClick={() => onOpenDetalhe(produto)}>
-      <div className="prod-thumb">
+      <div className="prod-thumb" data-cat={produto.categoria}>
         <span className="cat-tag">{produto.categoria}</span>
         {produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
         {produto.imagem ? (
@@ -92,7 +92,7 @@ function MultiCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'mult
 
   return (
     <div className="prod-card">
-      <div className="prod-thumb">
+      <div className="prod-thumb" data-cat={produto.categoria}>
         <span className="cat-tag">{produto.categoria}</span>
         {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
         <CategoryIcon categoria={produto.categoria} />
@@ -146,7 +146,7 @@ function MedidaCard({ produto, onAdd }: { produto: Extract<Produto, { tipo: 'med
 
   return (
     <div className="prod-card">
-      <div className="prod-thumb">
+      <div className="prod-thumb" data-cat={produto.categoria}>
         <span className="cat-tag">{produto.categoria}</span>
         {percentual > 0 && <span className="badge-multi">-{percentual}%</span>}
         <CategoryIcon categoria={produto.categoria} />

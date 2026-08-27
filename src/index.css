@@ -1,40 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  /* Paleta derivada do rosa da logo (#EB90B7) — "violet" e "blush" continuam com
-     esses nomes de variável (usados em todo o CSS) mas agora vivem na família rosa. */
-  --ink: #2B1521; --ink-soft: #5E2A44; --graphite: #7A6069; --graphite-faint: #A6919C;
-  --paper: #FFFCF7; --card: #FFFFFF; --line: #F5E2EA;
-  --violet: #A63368; --violet-deep: #7F2350; --violet-ink: #FFFFFF; --violet-soft: #FCEAF2;
-  --blush: #FCE4EF; --blush-line: #F7C9DD; --blush-deep: #D6427F;
-  --amber: #B45309; --amber-bg: #FEF3C7;
-  --corte: #C2542A; --corte-bg: #FBEAE1;
-  --seguranca: #2E8B72; --seguranca-bg: #E5F3EF;
+  /* Paleta "Bella Arte" — rosa de marca (oklch, hue 350) como única cor de origem;
+     tons derivados (blush/soft/deep) vêm de color-mix a partir dela, pra tudo ficar
+     consistente. "violet"/"blush" mantêm os nomes de variável (usados em todo o CSS). */
+  --ink: oklch(20% 0.02 350); --ink-soft: oklch(38% 0.05 350); --graphite: oklch(52% 0.02 350); --graphite-faint: oklch(66% 0.015 350);
+  --paper: oklch(99% 0.004 350); --card: oklch(100% 0 0); --line: oklch(92% 0.02 350);
+  --violet: oklch(72% 0.14 350); --violet-deep: oklch(56% 0.16 350); --violet-ink: oklch(100% 0 0); --violet-soft: color-mix(in oklch, var(--violet) 10%, white);
+  --blush: color-mix(in oklch, var(--violet) 12%, white); --blush-line: color-mix(in oklch, var(--violet) 28%, white); --blush-deep: color-mix(in oklch, var(--violet) 80%, black);
+  --amber: oklch(50% 0.15 60); --amber-bg: oklch(94% 0.06 85);
+  --corte: oklch(52% 0.15 40); --corte-bg: oklch(94% 0.03 40);
+  --seguranca: oklch(52% 0.1 165); --seguranca-bg: oklch(94% 0.03 165);
   --shadow: 0 1px 2px rgba(43,21,33,0.05), 0 8px 24px -12px rgba(43,21,33,0.18);
   --shadow-lift: 0 20px 44px -20px rgba(43,21,33,0.32);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #FBE9F1; --ink-soft: #EAC3D6; --graphite: #C9A3B5; --graphite-faint: #96768A;
-    --paper: #201017; --card: #2E1420; --line: #45202F;
-    --violet: #F0729F; --violet-deep: #F5A0C0; --violet-ink: #2E1420; --violet-soft: #3D1B2C;
-    --blush: #3D1B2C; --blush-line: #5C2A40; --blush-deep: #DE5A8C;
-    --amber: #FCD34D; --amber-bg: #3A2E12;
-    --corte: #E8875D; --corte-bg: #3A2116;
-    --seguranca: #5FC4A8; --seguranca-bg: #163229;
+    --ink: oklch(93% 0.02 350); --ink-soft: oklch(82% 0.05 350); --graphite: oklch(68% 0.03 350); --graphite-faint: oklch(50% 0.02 350);
+    --paper: oklch(18% 0.02 350); --card: oklch(22% 0.03 350); --line: oklch(30% 0.04 350);
+    --violet: oklch(72% 0.16 350); --violet-deep: oklch(80% 0.13 350); --violet-ink: oklch(22% 0.03 350); --violet-soft: color-mix(in oklch, var(--violet) 18%, var(--card));
+    --blush: color-mix(in oklch, var(--violet) 20%, var(--card)); --blush-line: color-mix(in oklch, var(--violet) 35%, var(--card)); --blush-deep: oklch(68% 0.16 350);
+    --amber: oklch(85% 0.12 85); --amber-bg: oklch(24% 0.05 70);
+    --corte: oklch(70% 0.12 45); --corte-bg: oklch(24% 0.04 40);
+    --seguranca: oklch(75% 0.1 165); --seguranca-bg: oklch(22% 0.04 165);
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
     --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
   }
 }
 :root[data-theme="dark"] {
-  --ink: #FBE9F1; --ink-soft: #EAC3D6; --graphite: #C9A3B5; --graphite-faint: #96768A;
-  --paper: #201017; --card: #2E1420; --line: #45202F;
-  --violet: #F0729F; --violet-deep: #F5A0C0; --violet-ink: #2E1420; --violet-soft: #3D1B2C;
-  --blush: #3D1B2C; --blush-line: #5C2A40; --blush-deep: #DE5A8C;
-  --amber: #FCD34D; --amber-bg: #3A2E12;
-  --corte: #E8875D; --corte-bg: #3A2116;
-  --seguranca: #5FC4A8; --seguranca-bg: #163229;
+  --ink: oklch(93% 0.02 350); --ink-soft: oklch(82% 0.05 350); --graphite: oklch(68% 0.03 350); --graphite-faint: oklch(50% 0.02 350);
+  --paper: oklch(18% 0.02 350); --card: oklch(22% 0.03 350); --line: oklch(30% 0.04 350);
+  --violet: oklch(72% 0.16 350); --violet-deep: oklch(80% 0.13 350); --violet-ink: oklch(22% 0.03 350); --violet-soft: color-mix(in oklch, var(--violet) 18%, var(--card));
+  --blush: color-mix(in oklch, var(--violet) 20%, var(--card)); --blush-line: color-mix(in oklch, var(--violet) 35%, var(--card)); --blush-deep: oklch(68% 0.16 350);
+  --amber: oklch(85% 0.12 85); --amber-bg: oklch(24% 0.05 70);
+  --corte: oklch(70% 0.12 45); --corte-bg: oklch(24% 0.04 40);
+  --seguranca: oklch(75% 0.1 165); --seguranca-bg: oklch(22% 0.04 165);
   --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
   --shadow-lift: 0 20px 44px -20px rgba(0,0,0,0.6);
 }
@@ -43,11 +44,11 @@
 html { scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .font-serif-display, .serif {
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  font-family: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 .font-mono-data, .mono {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
@@ -261,11 +262,11 @@ section { padding: 68px 0; }
 .result-count { font-size: 12px; color: var(--graphite-faint); padding: 14px 0 18px; }
 
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.prod-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); transition: transform 0.15s ease, box-shadow 0.15s ease; display: flex; flex-direction: column; }
+.prod-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); transition: transform 0.15s ease, box-shadow 0.15s ease; display: flex; flex-direction: column; }
 .prod-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
 .prod-card-click { cursor: pointer; }
 .detail-thumb {
-  aspect-ratio: 16/9; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
+  aspect-ratio: 1/1; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
   display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
   border-radius: 14px; margin: -6px -6px 18px;
 }
@@ -282,9 +283,14 @@ section { padding: 68px 0; }
 .detail-specs li::before { content: '›'; position: absolute; left: 0; color: var(--violet); font-weight: 800; }
 .detail-specs li b { color: var(--ink); font-weight: 700; }
 .prod-thumb {
-  aspect-ratio: 16/10; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
+  aspect-ratio: 1/1; background: linear-gradient(135deg, var(--blush) 0%, var(--violet-soft) 100%);
   display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
 }
+.prod-thumb[data-cat="Caneca"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 40) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 40) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Banner"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.05 200) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.05 200) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Cartão de Visita"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 90) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 90) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Adesivo"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.03 85) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.03 85) 60%, var(--card) 40%) 100%); }
+.prod-thumb[data-cat="Outros"] { background: linear-gradient(135deg, color-mix(in oklch, oklch(85% 0.02 240) 100%, var(--card) 0%) 0%, color-mix(in oklch, oklch(85% 0.02 240) 60%, var(--card) 40%) 100%); }
 .prod-thumb::after {
   content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%;
   background: color-mix(in srgb, var(--violet) 14%, transparent); right: -34px; bottom: -46px;
@@ -344,7 +350,7 @@ footer.site { padding: 40px 0 60px; border-top: 1px solid var(--line); margin-to
 }
 .modal-close { position: absolute; right: 18px; top: 16px; border: none; background: none; font-size: 22px; cursor: pointer; color: var(--graphite-faint); line-height: 1; }
 .modal-close:hover { color: var(--violet); }
-.modal-box h2 { font-size: 22px; font-family: Georgia, serif; margin-bottom: 4px; }
+.modal-box h2 { font-size: 22px; font-family: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin-bottom: 4px; }
 .modal-sub { font-size: 13px; color: var(--graphite); margin: 0 0 20px; }
 .cart-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-bottom: 1px solid var(--line); padding: 13px 0; }
 .cart-row .info b { font-size: 13.5px; }
