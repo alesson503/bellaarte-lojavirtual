@@ -7,9 +7,6 @@ import type { ArteAnexo } from '../types';
 
 type Tipo = 'UV' | 'Vinil';
 type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
-type Formato = 'circulo' | 'quadrado';
-
-const QTY_PRESETS = [25, 50, 100, 250, 500, 1000];
 
 export default function AdesivoConfigurator({
   onAdd,
@@ -20,9 +17,8 @@ export default function AdesivoConfigurator({
 }) {
   const [tipo, setTipo] = useState<Tipo>('UV');
   const [acab, setAcab] = useState<Acabamento>('Recortado');
-  const [shape, setShape] = useState<Formato>('circulo');
-  const [sizeCm, setSizeCm] = useState(5);
-  const [qty, setQty] = useState(50);
+  const [larg, setLarg] = useState(1);
+  const [alt, setAlt] = useState(1);
   const [arte, setArte] = useState<Arte | null>(null);
   const { fator, percentual } = usePromocao();
   // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
@@ -31,37 +27,21 @@ export default function AdesivoConfigurator({
     getAdesivoPrecos().then(setPrecos).catch(() => { /* mantém a tabela fixa (fallback) */ });
   }, []);
 
-  // Bobina: largura MÁXIMA de 1m (100cm), mas começa pequena — cresce em
-  // largura primeiro (só usando o que precisar), e só depois de bater no
-  // limite de 1m é que passa a crescer em comprimento (mais fileiras).
+  // Preço direto por Largura × Altura (m²) — igual Banner/Lona, em vez do
+  // cálculo antigo de encaixe na bobina (formato + tamanho em cm).
   const calc = useMemo(() => {
-    const gap = 0.2;
-    const cell = sizeCm + gap;
-    const rollMaxWidthCm = 100;
-    const maxPerRow = Math.max(1, Math.floor((rollMaxWidthCm + gap) / cell));
-    let perRow: number, rowsNeeded: number, widthUsedCm: number;
-    if (qty <= maxPerRow) {
-      perRow = qty;
-      rowsNeeded = 1;
-      widthUsedCm = perRow * cell;
-    } else {
-      perRow = maxPerRow;
-      rowsNeeded = Math.ceil(qty / perRow);
-      widthUsedCm = rollMaxWidthCm;
-    }
-    const lengthNeededM = (rowsNeeded * cell) / 100;
-    const widthUsedM = widthUsedCm / 100;
+    const larguraM = Math.max(0.1, larg);
+    const alturaM = Math.max(0.1, alt);
+    const m2 = larguraM * alturaM;
     const precoM2 = precos[tipo][acab];
-    const totalCheio = widthUsedM * lengthNeededM * precoM2;
+    const totalCheio = m2 * precoM2;
     const total = totalCheio * fator;
-    return { perRow, rowsNeeded, widthUsedCm, lengthNeededM, widthUsedM, precoM2, totalCheio, total, rollMaxWidthCm };
-  }, [sizeCm, qty, tipo, acab, precos, fator]);
+    return { larguraM, alturaM, m2, precoM2, totalCheio, total };
+  }, [larg, alt, tipo, acab, precos, fator]);
 
-  const maxPreviewPx = 260;
-  const mockWidthPx = Math.max(48, Math.round((calc.widthUsedCm / calc.rollMaxWidthCm) * maxPreviewPx));
-  const showCols = Math.min(calc.perRow, 6);
-  const showRows = Math.min(calc.rowsNeeded, 9);
-  const truncated = calc.rowsNeeded > showRows || calc.perRow > showCols;
+  // Proporção da prévia — não deixa ficar fininha/esticada demais quando a
+  // medida real é bem desproporcional (ex.: 3m × 0,2m).
+  const previewAspect = Math.min(3, Math.max(1 / 3, calc.larguraM / calc.alturaM));
 
   return (
     <section id="adesivos" className="band" ref={sectionRef}>
@@ -69,36 +49,23 @@ export default function AdesivoConfigurator({
         <div className="section-head reveal in">
           <div className="kicker">Monte o seu</div>
           <h2 className="serif">Adesivos, do seu jeito</h2>
-          <p>Escolha o tipo, o acabamento, o formato e o tamanho — a gente calcula quanto sai da bobina (1m de largura, comprimento que for preciso) e o preço, usando o valor real por m² do sistema.</p>
+          <p>Escolha o tipo, o acabamento e a medida (largura × altura) — a gente calcula o preço na hora, usando o valor real por m² do sistema.</p>
         </div>
         <div className="configurator reveal in">
           <div className="cfg-preview">
-            {arte && ehImagem(arte) ? (
-              <>
-                <div className={`art-box ${shape === 'circulo' ? 'circulo' : ''}`} style={{ width: 'min(320px, 100%)', aspectRatio: '1' }}>
-                  <img src={arte.dataUrl} alt="Prévia da sua arte" />
-                  <ArteGuides formato={shape} larguraMm={sizeCm * 10} alturaMm={sizeCm * 10} />
+            <div className="art-box" style={{ width: 'min(320px, 100%)', aspectRatio: previewAspect }}>
+              {arte && ehImagem(arte) ? (
+                <img src={arte.dataUrl} alt="Prévia da sua arte" />
+              ) : (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--graphite)' }}>
+                  {calc.larguraM.toFixed(2).replace('.', ',')}m × {calc.alturaM.toFixed(2).replace('.', ',')}m
                 </div>
-                <ArteLegend />
-              </>
-            ) : (
-              <div className="sheet-mock" style={{ width: mockWidthPx, gridTemplateColumns: `repeat(${showCols}, 1fr)` }}>
-                {Array.from({ length: showCols * showRows }).map((_, i) => (
-                  <div key={i} style={{ aspectRatio: '1', background: 'var(--violet)', opacity: 0.85, borderRadius: shape === 'circulo' ? '50%' : '3px' }} />
-                ))}
-                {truncated && (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 10, color: 'var(--graphite-faint)', fontWeight: 700 }}>
-                    + bobina continua ({calc.rowsNeeded} fileira{calc.rowsNeeded !== 1 ? 's' : ''} no total)
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+              <ArteGuides formato="retangulo" larguraMm={calc.larguraM * 1000} alturaMm={calc.alturaM * 1000} />
+            </div>
+            <ArteLegend />
             <div className="sheet-fit-note">
-              <b>{calc.perRow}</b> por fileira{' '}
-              <span>
-                {calc.widthUsedCm >= calc.rollMaxWidthCm ? '(largura máxima de 1m)' : `(${calc.widthUsedCm.toFixed(0)}cm de largura, de 1m)`}
-              </span>{' '}
-              · comprimento: <b>{calc.lengthNeededM.toFixed(2).replace('.', ',')}</b> m
+              <b>{calc.m2.toFixed(2).replace('.', ',')}</b> m² no total
             </div>
           </div>
           <div className="cfg-fields">
@@ -119,34 +86,22 @@ export default function AdesivoConfigurator({
                 ))}
               </div>
             </div>
-            <div>
-              <label className="field-label">Formato</label>
-              <div className="swatch-row">
-                <button className={`swatch ${shape === 'circulo' ? 'on' : ''}`} onClick={() => setShape('circulo')}>⭕ Redondo</button>
-                <button className={`swatch ${shape === 'quadrado' ? 'on' : ''}`} onClick={() => setShape('quadrado')}>◻️ Quadrado</button>
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Tamanho</label>
-              <div className="num-row">
-                <input type="range" min={3} max={15} step={0.5} value={sizeCm} onChange={e => setSizeCm(parseFloat(e.target.value))} />
-                <span className="mono" style={{ minWidth: 52, textAlign: 'right' }}>{sizeCm.toFixed(1).replace('.', ',')} cm</span>
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Quantidade</label>
-              <div className="swatch-row" style={{ marginBottom: 10 }}>
-                {QTY_PRESETS.map(q => (
-                  <button key={q} className={`swatch ${qty === q ? 'on' : ''}`} onClick={() => setQty(q)}>{q >= 1000 ? '1.000' : q} un</button>
-                ))}
-              </div>
-              <div className="num-row">
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label className="field-label">Largura (m)</label>
                 <input
-                  type="number" min={1} step={1} value={qty}
-                  onChange={e => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  style={{ width: 110, height: 38, borderRadius: 9, border: '1.5px solid var(--line)', background: 'var(--paper)', padding: '0 12px', fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 700 }}
+                  type="number" min={0.1} step={0.1} value={larg}
+                  onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                  style={{ width: '100%', height: 38, borderRadius: 9, border: '1.5px solid var(--line)', background: 'var(--paper)', padding: '0 12px', fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 700 }}
                 />
-                <span className="mono" style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>quantidade exata (vale pra pedidos grandes também)</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="field-label">Altura (m)</label>
+                <input
+                  type="number" min={0.1} step={0.1} value={alt}
+                  onChange={e => setAlt(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                  style={{ width: '100%', height: 38, borderRadius: 9, border: '1.5px solid var(--line)', background: 'var(--paper)', padding: '0 12px', fontSize: 13.5, color: 'var(--ink-soft)', fontWeight: 700 }}
+                />
               </div>
             </div>
             <ArteUpload arte={arte} onArteChange={setArte} />
@@ -158,9 +113,9 @@ export default function AdesivoConfigurator({
               <div className="meta"><span className="mono">{fmt(calc.precoM2)} / m²</span><br />Entrega em até 48h</div>
             </div>
             <div className="cfg-note">
-              A bobina tem 1m de largura fixa — o comprimento cresce conforme o tamanho e a quantidade pedida. Preço = área da bobina usada (largura × comprimento) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
+              Preço = largura × altura (m²) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
             </div>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${qty}un)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined); setArte(null); }}>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${calc.larguraM.toFixed(2).replace('.', ',')}m × ${calc.alturaM.toFixed(2).replace('.', ',')}m)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined); setArte(null); }}>
               Adicionar ao pedido
             </button>
           </div>
