@@ -131,7 +131,6 @@ export default function StoreApp() {
                   <ProductCard
                     key={('id' in p ? p.id : p.nome) + i}
                     produto={p}
-                    onAdd={addToCart}
                     onGoPersonalize={id => goPage('personalize', id)}
                     onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
                   />

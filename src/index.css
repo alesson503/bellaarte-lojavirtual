@@ -360,6 +360,7 @@ section { padding: 68px 0; }
 .add-btn { width: 100%; background: var(--ink); color: var(--paper); border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.12s ease; }
 .buy-now-btn { width: 100%; background: var(--amber); color: #fff; border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.12s ease; }
 .buy-now-btn:hover { opacity: 0.9; }
+.buy-now-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .add-btn:hover { background: var(--violet); }
 .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .empty { text-align: center; padding: 70px 20px; color: var(--graphite-faint); grid-column: 1/-1; }

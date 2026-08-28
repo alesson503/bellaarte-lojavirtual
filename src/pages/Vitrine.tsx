@@ -5,7 +5,6 @@ import { SearchIcon } from '../icons';
 import ProductCard from '../components/ProductCard';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { useCart } from '../context/CartContext';
 
 // Página de verdade pra vitrine (era a seção "produtos" dentro de
 // StoreApp/Catalogo). Filtro de categoria vem da URL (?categoria=...) pra
@@ -16,7 +15,6 @@ export default function Vitrine() {
   const filtro = searchParams.get('categoria') ?? 'Todos';
   const [busca, setBusca] = useState(searchParams.get('busca') ?? '');
   const { catalogo } = useProdutos();
-  const { addToCart } = useCart();
 
   const categorias = useMemo(() => ['Todos', ...Array.from(new Set(catalogo.map(p => p.categoria))).sort()], [catalogo]);
 
@@ -69,7 +67,6 @@ export default function Vitrine() {
                     <ProductCard
                       key={('id' in p ? p.id : p.nome) + i}
                       produto={p}
-                      onAdd={addToCart}
                       onGoPersonalize={onGoPersonalize}
                       onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
                     />
