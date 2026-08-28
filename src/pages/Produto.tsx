@@ -63,7 +63,7 @@ export default function Produto() {
 
   // ── preço + nome-pro-pedido, um por tipo ──
   const corObj = produto.tipo === 'simples' ? produto.cores?.find(c => c.nome === corSelecionada) ?? null : null;
-  const fotoExibida = corObj?.foto || (produto.tipo === 'simples' ? produto.imagem : undefined);
+  const fotoExibida = corObj?.foto || produto.imagem;
 
   const m2 = Math.max(0.1, larg) * Math.max(0.1, alt);
   const precoMultiCheio = produto.tipo === 'multi' ? produto.preco(selMulti) : null;

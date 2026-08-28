@@ -42,6 +42,7 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/produtos', require('./routes/produtos'));
+app.use('/api/catalogo-fixo', require('./routes/catalogoFixo'));
 app.use('/api/pedidos', require('./routes/pedidos'));
 app.use('/api/configuracoes', require('./routes/configuracoes'));
 app.use('/api/promocoes', require('./routes/promocoes'));

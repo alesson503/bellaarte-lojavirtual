@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   listErpProducts, listLojaProducts, sincronizarProdutosErp,
   getAdesivoStatus, corrigirNomeAdesivo,
+  listCatalogoFixoImagens, uploadImagemCatalogoFixo, removerImagemCatalogoFixo,
   type ErpProduto, type LojaProduto, type AdesivoCombo,
 } from '../services/productsService';
-import { fmt } from '../data';
+import { fmt, MULTI, MEDIDA } from '../data';
+import { imageToDataUrl } from '../lib/imageToDataUrl';
 import EditarProdutoModal from './EditarProdutoModal';
 
 export default function AdminProducts() {
@@ -96,6 +98,8 @@ export default function AdminProducts() {
       <EditarProdutoModal produto={editando} onClose={() => setEditando(null)} onChanged={carregar} />
 
       <AdesivoStatusPanel />
+
+      <ImagensCatalogoFixoPanel />
 
       <div className="adm-panel" style={{ marginTop: 20 }}>
         <h2>Catálogo completo do ERP</h2>
@@ -230,6 +234,118 @@ function AdesivoStatusPanel() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Panfletos, Wind Banner, Placa PS e Banner/Lona são definidos direto no
+// código (nome/preço/opções fixos) — não têm cadastro no banco, então não
+// aparecem na tabela "Produtos na vitrine" acima. Essa foto é opcional: sem
+// ela, o card continua mostrando o ícone da categoria, igual sempre foi.
+const PRODUTOS_CATALOGO_FIXO = [...MULTI, ...MEDIDA];
+
+function ImagensCatalogoFixoPanel() {
+  const [imagens, setImagens] = useState<Record<string, string> | null>(null);
+  const [erro, setErro] = useState('');
+  const [enviandoId, setEnviandoId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const alvoIdRef = useRef<string | null>(null);
+
+  function carregar() {
+    listCatalogoFixoImagens().then(setImagens).catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar imagens.'));
+  }
+
+  useEffect(carregar, []);
+
+  function pedirFoto(id: string) {
+    alvoIdRef.current = id;
+    fileInputRef.current?.click();
+  }
+
+  async function onArquivoEscolhido(file: File | null) {
+    const id = alvoIdRef.current;
+    if (!file || !id) return;
+    setEnviandoId(id);
+    try {
+      const dataUrl = await imageToDataUrl(file, 600, 'image/jpeg', 0.85);
+      await uploadImagemCatalogoFixo(id, dataUrl);
+      setImagens(prev => ({ ...prev, [id]: dataUrl }));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível enviar essa imagem.');
+    } finally {
+      setEnviandoId(null);
+    }
+  }
+
+  async function remover(id: string) {
+    setEnviandoId(id);
+    try {
+      await removerImagemCatalogoFixo(id);
+      setImagens(prev => { const next = { ...prev }; delete next[id]; return next; });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível remover a foto.');
+    } finally {
+      setEnviandoId(null);
+    }
+  }
+
+  return (
+    <div className="adm-panel" style={{ marginTop: 20 }}>
+      <h2>Fotos do catálogo fixo</h2>
+      <p className="sub">
+        Panfletos, Wind Banner, Placa PS e Banner/Lona têm preço calculado (não vêm do ERP), então não têm foto
+        cadastrada em lugar nenhum — sem uma foto aqui, o card mostra o ícone da categoria.
+      </p>
+
+      {erro ? (
+        <div className="adm-empty">{erro}</div>
+      ) : !imagens ? (
+        <div className="adm-empty">Carregando…</div>
+      ) : (
+        <div className="adm-table-wrap">
+        <table className="adm-table" style={{ marginTop: 16 }}>
+          <thead>
+            <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th></th></tr>
+          </thead>
+          <tbody>
+            {PRODUTOS_CATALOGO_FIXO.map(p => {
+              const foto = imagens[p.id];
+              return (
+                <tr key={p.id}>
+                  <td>
+                    {foto ? (
+                      <img src={foto} alt={p.nome} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)' }} />
+                    )}
+                  </td>
+                  <td><b>{p.nome}</b></td>
+                  <td>{p.categoria}</td>
+                  <td>
+                    {enviandoId === p.id ? (
+                      <span style={{ fontSize: 12.5, color: 'var(--graphite-faint)' }}>Enviando…</span>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="adm-link-btn" style={{ margin: 0 }} onClick={() => pedirFoto(p.id)}>
+                          {foto ? 'Trocar foto' : 'Subir foto'}
+                        </button>
+                        {foto && (
+                          <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={() => remover(p.id)}>
+                            Remover foto
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        </div>
+      )}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={e => onArquivoEscolhido(e.target.files?.[0] ?? null)} />
     </div>
   );
 }

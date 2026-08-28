@@ -29,6 +29,7 @@ export interface MultiProduct {
   unidade?: string;
   dims: MultiDim[];
   preco: (v: Record<string, string>) => number | null;
+  imagem?: string;
 }
 
 export interface MedidaProduct {
@@ -37,6 +38,7 @@ export interface MedidaProduct {
   nome: string;
   categoria: Categoria;
   precoM2: number;
+  imagem?: string;
 }
 
 export interface SimpleProduct {

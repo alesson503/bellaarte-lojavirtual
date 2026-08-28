@@ -78,6 +78,17 @@ async function migrate() {
     -- só existe na loja, sync do ERP nunca mexe.
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS especificacoes JSONB NOT NULL DEFAULT '[]';
 
+    -- Foto dos produtos de "catálogo fixo" (Panfletos, Wind Banner, Placa PS,
+    -- Banner/Lona) — esses não vêm do ERP nem têm linha na tabela produtos,
+    -- são definidos direto no código do site (nome/preço/opções fixos). Essa
+    -- tabela guarda só a foto que o admin sobe pra cada um, pelo id fixo
+    -- usado em src/data.ts (ex.: 'panfletos', 'windbanner').
+    CREATE TABLE IF NOT EXISTS catalogo_fixo_imagens (
+      produto_id    TEXT PRIMARY KEY,
+      imagem_url    TEXT NOT NULL,
+      atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS clientes (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nome        TEXT NOT NULL,

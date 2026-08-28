@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria } from '../data';
-import { listLojaProducts } from '../services/productsService';
+import { listLojaProducts, listCatalogoFixoImagens } from '../services/productsService';
 
 // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
 // por qualquer motivo, cai pro catálogo fixo em vez de mostrar vitrine vazia.
@@ -8,6 +8,7 @@ import { listLojaProducts } from '../services/productsService';
 // produto (/produto/:id), sem duplicar essa lógica.
 export function useProdutos() {
   const [simples, setSimples] = useState(SIMPLES);
+  const [imagensFixo, setImagensFixo] = useState<Record<string, string>>({});
 
   useEffect(() => {
     listLojaProducts()
@@ -28,9 +29,19 @@ export function useProdutos() {
         })));
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });
+
+    // Fotos dos produtos "multi"/"medida" (Panfletos, Wind Banner, Placa PS,
+    // Banner/Lona) — opcional, sobem pelo painel admin; sem foto, o card
+    // continua mostrando o ícone da categoria, igual sempre foi.
+    listCatalogoFixoImagens().then(setImagensFixo).catch(() => { /* mantém sem foto */ });
   }, []);
 
-  const catalogo: Produto[] = useMemo(() => [...LINKS, ...MULTI, ...MEDIDA, ...simples], [simples]);
+  const catalogo: Produto[] = useMemo(() => [
+    ...LINKS,
+    ...MULTI.map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
+    ...MEDIDA.map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
+    ...simples,
+  ], [simples, imagensFixo]);
 
   return { catalogo, simples };
 }

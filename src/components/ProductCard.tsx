@@ -85,7 +85,7 @@ export default function ProductCard({
         <span className="cat-tag">{produto.categoria}</span>
         {produto.tipo === 'simples' && produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
         {produto.tipo !== 'simples' && percentual > 0 ? <span className="badge-multi">-{percentual}%</span> : null}
-        {produto.tipo === 'simples' && produto.imagem ? (
+        {produto.imagem ? (
           <img src={produto.imagem} alt={produto.nome} className="prod-thumb-img" />
         ) : (
           <CategoryIcon categoria={produto.categoria} />
