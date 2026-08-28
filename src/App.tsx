@@ -1,5 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import StoreApp from './StoreApp';
+import StoreLayout from './components/StoreLayout';
+import Vitrine from './pages/Vitrine';
+import Produto from './pages/Produto';
+import Carrinho from './pages/Carrinho';
 import AdminLogin from './admin/AdminLogin';
 import AdminLayout from './admin/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
@@ -11,7 +15,12 @@ import AdminSiteSettings from './admin/AdminSiteSettings';
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<StoreApp />} />
+      <Route element={<StoreLayout />}>
+        <Route path="/" element={<StoreApp />} />
+        <Route path="/produtos" element={<Vitrine />} />
+        <Route path="/produto/:id" element={<Produto />} />
+        <Route path="/carrinho" element={<Carrinho />} />
+      </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />

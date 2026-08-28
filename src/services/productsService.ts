@@ -86,6 +86,34 @@ export async function removerImagemProduto(id: string): Promise<void> {
   }
 }
 
+// Fotos dos produtos de "catálogo fixo" (Panfletos, Wind Banner, Placa PS,
+// Banner/Lona) — esses não têm cadastro no banco, só a foto que o admin
+// sobe fica salva, casada pelo id fixo usado em src/data.ts.
+export async function listCatalogoFixoImagens(): Promise<Record<string, string>> {
+  const res = await fetch(`${API_URL}/api/catalogo-fixo/imagens`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao buscar imagens do catálogo fixo.');
+  return data.imagens;
+}
+
+export async function uploadImagemCatalogoFixo(produtoId: string, imagemDataUrl: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/catalogo-fixo/${produtoId}/imagem`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ imagem: imagemDataUrl }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao enviar imagem.');
+}
+
+export async function removerImagemCatalogoFixo(produtoId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/catalogo-fixo/${produtoId}/imagem`, { method: 'DELETE', headers: authHeader() });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Erro ao remover imagem.');
+  }
+}
+
 // Preço do configurador de Adesivo — vem do banco (sincronizado do ERP por
 // nome), mesmo formato que a tabela fixa antiga em data.ts.
 export type AdesivoPrecos = Record<'UV' | 'Vinil', Record<'Recortado' | 'Refilado' | 'Laminado', number>>;

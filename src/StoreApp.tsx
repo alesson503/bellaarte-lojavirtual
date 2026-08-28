@@ -1,77 +1,62 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
 import CartaoConfigurator from './components/CartaoConfigurator';
-import Catalogo from './components/Catalogo';
-import CartModal from './components/CartModal';
-import CheckoutModal from './components/CheckoutModal';
-import UploadModal from './components/UploadModal';
-import LoginModal from './components/LoginModal';
-import Logo from './components/Logo';
-import Toast from './components/Toast';
-import { WhatsAppIcon, UserIcon } from './icons';
-import { useAuth } from './auth/AuthContext';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import ProductCard from './components/ProductCard';
+import { CategoryIcon, SearchIcon, WhatsAppIcon } from './icons';
 import { useSiteSettings } from './context/SiteSettingsContext';
-import { usePromocao } from './context/PromocaoContext';
-import { getConfig } from './services/configService';
-import { WHATSAPP_NUMERO_PADRAO, whatsappLink } from './config';
-import type { CartItem } from './types';
+import { useCart } from './context/CartContext';
+import { useWhatsapp } from './context/WhatsappContext';
+import { useProdutos } from './hooks/useProdutos';
+import { whatsappLink } from './config';
 import heroCanecas from './assets/hero-canecas.jpg';
 
-export type { CartItem };
-export type Page = 'inicio' | 'categorias' | 'como' | 'personalize' | 'produtos' | 'contato';
-
-const NAV_ITEMS: { page: Page; label: string }[] = [
-  { page: 'inicio', label: 'Início' },
-  { page: 'categorias', label: 'Categorias' },
-  { page: 'produtos', label: 'Produtos' },
-  { page: 'personalize', label: 'Personalize' },
-  { page: 'como', label: 'Como funciona' },
-  { page: 'contato', label: 'Contato' },
-];
+export type Page = 'inicio' | 'como' | 'personalize' | 'contato';
 
 export default function StoreApp() {
-  const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
-  const { promocao } = usePromocao();
-  const [whatsapp, setWhatsapp] = useState(WHATSAPP_NUMERO_PADRAO);
-  useEffect(() => {
-    getConfig().then(c => { if (c.whatsapp_numero) setWhatsapp(c.whatsapp_numero); }).catch(() => { /* mantém o padrão */ });
-  }, []);
+  const whatsapp = useWhatsapp();
+  const { addToCart } = useCart();
+  const { catalogo } = useProdutos();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState<Page>('inicio');
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [produtosFiltro, setProdutosFiltro] = useState('Todos');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  const [toastShow, setToastShow] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const categorias = useMemo(() => Array.from(new Set(catalogo.map(p => p.categoria))).sort(), [catalogo]);
+  const maisPedidos = useMemo(() => catalogo.slice(0, 8), [catalogo]);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
 
-  function toast(msg: string) {
-    setToastMsg(msg);
-    setToastShow(true);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastShow(false), 2600);
-  }
-
   function goPage(next: Page, scrollToId?: string) {
     setPage(next);
     setScrollTarget(scrollToId ?? null);
-    setMobileNavOpen(false);
   }
 
   function goProdutos(categoria: string) {
-    setProdutosFiltro(categoria);
-    goPage('produtos');
+    navigate(categoria === 'Todos' ? '/produtos' : `/produtos?categoria=${encodeURIComponent(categoria)}`);
   }
+
+  // Outras páginas (Vitrine/Produto/Carrinho, e o próprio Footer) mandam pra
+  // cá com { scrollTo: 'adesivos' | 'cartoes' } quando o clique era em algo
+  // que só existe dentro da Home (configuradores), ou { page: 'como' | 'contato' }
+  // pra abrir direto uma das seções-página. Depende de `location` (não só
+  // do mount) pra funcionar mesmo clicando de novo já estando na Home.
+  useEffect(() => {
+    const state = location.state as { scrollTo?: string; page?: Page } | null;
+    if (state?.scrollTo) {
+      goPage('personalize', state.scrollTo);
+      navigate('.', { replace: true, state: null });
+    } else if (state?.page) {
+      goPage(state.page);
+      navigate('.', { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
 
   useEffect(() => {
     if (scrollTarget === 'adesivos') adesivosRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -79,74 +64,9 @@ export default function StoreApp() {
     else window.scrollTo(0, 0);
   }, [page, scrollTarget]);
 
-  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
-    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined }]);
-    const totalItem = preco * quantidade;
-    toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-  }
-
-  // "Comprar agora" — mesma coisa que adicionar ao pedido, só que já abre
-  // direto a tela de finalizar (sem passar pela tela do carrinho no meio).
-  function comprarAgora(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
-    addToCart(nome, preco, quantidade, observacao, arte);
-    setCheckoutOpen(true);
-  }
-
-  function removeFromCart(idx: number) {
-    setCart(prev => prev.filter((_, i) => i !== idx));
-  }
-
   return (
     <>
-      <div className="info-bar">
-        <span>🚚 Frete combinado direto com você pelo WhatsApp</span>
-        <span>✂️ Arte revisada antes de imprimir</span>
-        <span>💬 Atendimento rápido</span>
-      </div>
-      {promocao && (
-        <div className="promo-banner">
-          🎉 <b>{promocao.nome}</b> — {promocao.percentual}% OFF em toda a loja
-        </div>
-      )}
-      <header className="site">
-        <div className="shell nav">
-          <button className="brand" onClick={() => goPage('inicio')}>
-            <Logo size={40} />
-            <span className="word">Bella <span>Arte</span></span>
-          </button>
-          <nav className="links">
-            {NAV_ITEMS.map(item => (
-              <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => goPage(item.page)}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-          <div className="nav-right">
-            <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
-            <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
-            <button className="cart-pill" title="Carrinho" onClick={() => setCartOpen(true)}>🛍️ <b>{cart.length}</b></button>
-            {user?.role === 'admin' && (
-              <Link className="cart-pill" to="/admin" title="Voltar pro painel administrativo">⚙️ Painel admin</Link>
-            )}
-            {user ? (
-              <button className="cart-pill" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
-                <UserIcon /> {user.nome.split(' ')[0]}
-              </button>
-            ) : (
-              <button className="cart-pill" title="Entrar / criar conta" onClick={() => setLoginOpen(true)}>
-                <UserIcon /> Entrar
-              </button>
-            )}
-          </div>
-        </div>
-        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
-          {NAV_ITEMS.map(item => (
-            <a key={item.page} className={page === item.page ? 'active' : ''} onClick={() => goPage(item.page)}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <Header page={page} onGoPage={goPage} onOpenCart={() => navigate('/carrinho')} />
 
       {page === 'inicio' && (
         <div className="shell hero">
@@ -185,43 +105,40 @@ export default function StoreApp() {
             <div><span className="ic">⚡</span>Produção em 48h</div>
             <div><span className="ic">💬</span>Atendimento direto</div>
           </div>
-        </div>
-      )}
 
-      {page === 'categorias' && (
-        <section>
-          <div className="shell">
-            <div className="section-head">
-              <div className="kicker">Categorias</div>
-              <h2 className="serif">O que a gente faz por aqui</h2>
-              <p>Do cartão que vai na carteira ao adesivo que vai na garrafinha — clique numa categoria pra ir direto pra ela no catálogo.</p>
-            </div>
-            <div className="rail-wrap">
-            <div className="rail">
-              <button className="cat-card tone-a" onClick={() => goPage('personalize', 'adesivos')}>
-                <div className="ic">🏷️</div>
-                <b>Adesivos</b><span>UV e Vinil — recortado, refilado, laminado</span>
+          <div className="cats-title serif">O que você precisa hoje?</div>
+          <div className="cats-row">
+            {categorias.map(cat => (
+              <button key={cat} className="cat-circle" onClick={() => goProdutos(cat)}>
+                <div className="ic"><CategoryIcon categoria={cat} /></div>
+                <b>{cat}</b>
               </button>
-              <button className="cat-card tone-b" onClick={() => goPage('personalize', 'cartoes')}>
-                <div className="ic">🪪</div>
-                <b>Cartões de Visita</b><span>100 a 1000 un, com ou sem verniz</span>
-              </button>
-              <button className="cat-card tone-c" onClick={() => goProdutos('Caneca')}>
-                <div className="ic">☕</div>
-                <b>Canecas</b><span>Branca, 180ml, alça colorida</span>
-              </button>
-              <button className="cat-card tone-a" onClick={() => goProdutos('Banner')}>
-                <div className="ic">🚩</div>
-                <b>Banners</b><span>Lona avulsa e Wind Banner (P/G/GG)</span>
-              </button>
-              <button className="cat-card tone-b" onClick={() => goProdutos('Outros')}>
-                <div className="ic">✨</div>
-                <b>Diversos</b><span>Panfletos, placas PS, polaroid e mais</span>
-              </button>
-            </div>
-            </div>
+            ))}
+            <button className="cat-circle" onClick={() => goProdutos('Todos')}>
+              <div className="ic"><SearchIcon /></div>
+              <b>Ver tudo</b>
+            </button>
           </div>
-        </section>
+
+          {maisPedidos.length > 0 && (
+            <>
+              <div className="section-title-row">
+                <h2 className="serif">Mais pedidos</h2>
+                <a onClick={() => goProdutos('Todos')}>Ver todos →</a>
+              </div>
+              <div className="gallery">
+                {maisPedidos.map((p, i) => (
+                  <ProductCard
+                    key={('id' in p ? p.id : p.nome) + i}
+                    produto={p}
+                    onGoPersonalize={id => goPage('personalize', id)}
+                    onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {page === 'como' && (
@@ -256,10 +173,6 @@ export default function StoreApp() {
         </>
       )}
 
-      {page === 'produtos' && (
-        <Catalogo key={produtosFiltro} filtroInicial={produtosFiltro} onAdd={addToCart} onComprarAgora={comprarAgora} onGoPersonalize={id => goPage('personalize', id)} whatsapp={whatsapp} />
-      )}
-
       {page === 'contato' && (
         <div className="shell" style={{ paddingBottom: 20, paddingTop: 68 }}>
           <div className="final-cta">
@@ -275,26 +188,7 @@ export default function StoreApp() {
         </div>
       )}
 
-      <footer className="site">
-        <div className="shell foot-row">
-          <span>🎨 Bella Arte — Gráfica &amp; Personalizados, São Paulo/SP</span>
-        </div>
-      </footer>
-
-      <CartModal open={cartOpen} cart={cart} onClose={() => setCartOpen(false)} onRemove={removeFromCart}
-        onCheckout={() => {
-          if (!cart.length) { toast('Seu carrinho está vazio — adicione um produto primeiro.'); return; }
-          setCartOpen(false);
-          setCheckoutOpen(true);
-        }} />
-      <CheckoutModal open={checkoutOpen} cart={cart} onClose={() => setCheckoutOpen(false)} />
-      <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={nome => { setLoginOpen(false); toast(`✓ Bem-vindo(a), ${nome.split(' ')[0]}!`); }} />
-      <Toast message={toastMsg} show={toastShow} />
-      <a className="whats-float" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte.')}
-        target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp">
-        <WhatsAppIcon size={28} />
-      </a>
+      <Footer />
     </>
   );
 }
