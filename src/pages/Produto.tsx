@@ -65,8 +65,15 @@ export default function Produto() {
   const corObj = produto.tipo === 'simples' ? produto.cores?.find(c => c.nome === corSelecionada) ?? null : null;
   const fotoExibida = corObj?.foto || produto.imagem;
 
+  // `selMulti` só é preenchido pelo useEffect (depois do primeiro render) —
+  // até lá ele chega vazio aqui embaixo. Sem esse fallback, produto.preco()
+  // recebe chave undefined pra algum dim e quebra a página (branco na hora).
+  const selMultiAtual = produto.tipo === 'multi'
+    ? Object.fromEntries(produto.dims.map(d => [d.key, selMulti[d.key] ?? d.options[0]]))
+    : selMulti;
+
   const m2 = Math.max(0.1, larg) * Math.max(0.1, alt);
-  const precoMultiCheio = produto.tipo === 'multi' ? produto.preco(selMulti) : null;
+  const precoMultiCheio = produto.tipo === 'multi' ? produto.preco(selMultiAtual) : null;
   const precoMedidaCheio = produto.tipo === 'medida' ? m2 * produto.precoM2 : null;
 
   const preco =
@@ -76,7 +83,7 @@ export default function Produto() {
 
   const nomeParaPedido =
     produto.tipo === 'simples' ? (produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome) :
-    produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMulti[d.key]).join(' · ')})` :
+    produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMultiAtual[d.key]).join(' · ')})` :
     `${produto.nome} (${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m = ${m2.toFixed(2).replace('.', ',')}m²)`;
 
   const qtdPedido = produto.tipo === 'simples' ? quantidade : 1;
@@ -167,7 +174,7 @@ export default function Produto() {
                   {d.options.map(op => (
                     <button
                       key={op}
-                      className={`swatch ${selMulti[d.key] === op ? 'on' : ''}`}
+                      className={`swatch ${selMultiAtual[d.key] === op ? 'on' : ''}`}
                       onClick={() => setSelMulti(prev => ({ ...prev, [d.key]: op }))}
                     >
                       {op}
