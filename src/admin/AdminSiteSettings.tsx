@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
 import { trocarSenha } from '../auth/authService';
 import { getConfig, setConfig } from '../services/configService';
+import { SOBRE_NOS_PADRAO } from '../context/SobreNosContext';
 import logoDefault from '../assets/logo.png';
 import heroDefault from '../assets/hero-canecas.jpg';
 
@@ -40,14 +41,17 @@ export default function AdminSiteSettings() {
       <div className="adm-panel" style={{ marginBottom: 20 }}>
         <h2>Configurações do site</h2>
         <p className="sub">
-          WhatsApp e senha valem pra loja inteira. Já os textos, cores, logo e banner abaixo ficam salvos só
-          neste navegador (editor de teste local) — se abrir a loja em outro computador, não vai ver essa parte lá.
+          WhatsApp, senha e o texto da página "Sobre Nós" valem pra loja inteira. Já os textos da home, cores,
+          logo e banner abaixo ficam salvos só neste navegador (editor de teste local) — se abrir a loja em
+          outro computador, não vai ver essa parte lá.
         </p>
       </div>
 
       {erro && <div className="adm-error" style={{ marginBottom: 14 }}>{erro}</div>}
 
       <WhatsAppPanel />
+
+      <SobreNosPanel />
 
       <div className="adm-panel" style={{ marginBottom: 20 }}>
         <h2>Textos da home</h2>
@@ -165,6 +169,58 @@ function WhatsAppPanel() {
           {erro && <p className="adm-error">{erro}</p>}
           {ok && <div className="adm-hint" style={{ marginBottom: 14 }}>✓ Número salvo — já vale pra loja inteira.</div>}
           <button className="btn-primary" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar número'}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SobreNosPanel() {
+  const [texto, setTexto] = useState('');
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [ok, setOk] = useState(false);
+
+  useEffect(() => {
+    getConfig()
+      .then(c => setTexto(c.sobre_nos_texto || SOBRE_NOS_PADRAO))
+      .catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar.'))
+      .finally(() => setCarregando(false));
+  }, []);
+
+  async function salvar() {
+    setErro(''); setOk(false);
+    if (!texto.trim()) { setErro('Escreva algum texto antes de salvar.'); return; }
+    setSalvando(true);
+    try {
+      await setConfig('sobre_nos_texto', texto.trim());
+      setOk(true);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="adm-panel" style={{ marginBottom: 20 }}>
+      <h2>Página "Sobre Nós"</h2>
+      <p className="sub">
+        Texto que aparece na página Sobre Nós da loja — vale pra todo mundo que visita, não só neste navegador.
+        Pra separar parágrafos, deixe uma linha em branco entre eles.
+      </p>
+      {carregando ? (
+        <div className="adm-empty">Carregando…</div>
+      ) : (
+        <>
+          <div className="field-group">
+            <label>Texto</label>
+            <textarea rows={10} value={texto} onChange={e => setTexto(e.target.value)} />
+          </div>
+          {erro && <p className="adm-error">{erro}</p>}
+          {ok && <div className="adm-hint" style={{ marginBottom: 14 }}>✓ Texto salvo — já vale pra loja inteira.</div>}
+          <button className="btn-primary" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar texto'}</button>
         </>
       )}
     </div>

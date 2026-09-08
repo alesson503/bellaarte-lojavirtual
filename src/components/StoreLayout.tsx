@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { ToastProvider } from '../context/ToastContext';
 import { WhatsappProvider } from '../context/WhatsappContext';
+import { SobreNosProvider } from '../context/SobreNosContext';
 import { CartProvider } from '../context/CartContext';
 import WhatsFloat from './WhatsFloat';
 
@@ -12,10 +13,12 @@ export default function StoreLayout() {
   return (
     <ToastProvider>
       <WhatsappProvider>
-        <CartProvider>
-          <Outlet />
-          <WhatsFloat />
-        </CartProvider>
+        <SobreNosProvider>
+          <CartProvider>
+            <Outlet />
+            <WhatsFloat />
+          </CartProvider>
+        </SobreNosProvider>
       </WhatsappProvider>
     </ToastProvider>
   );
