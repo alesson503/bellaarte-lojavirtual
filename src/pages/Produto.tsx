@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fmt, type Produto as ProdutoType } from '../data';
 import { useProdutos } from '../hooks/useProdutos';
@@ -9,6 +9,13 @@ import { CategoryIcon, WhatsAppIcon } from '../icons';
 import { whatsappLink } from '../config';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { CANECA_VARIANTE_POR_NOME } from '../lib/canecaVariantes';
+import { ArteUpload, ehImagem, type Arte } from '../components/ArtePreview';
+
+// Carregado sob demanda — o Three.js só entra no bundle de quem realmente
+// abre a página de uma caneca com forma 3D cadastrada (a maioria das
+// páginas de produto nunca precisa disso).
+const CanecaViewer3D = lazy(() => import('../components/CanecaViewer3D'));
 
 // Página de verdade pro que era o card de produto expandido. Cobre os três
 // tipos que têm uma "ficha" própria — simples, multi (opções fixas tipo
@@ -32,6 +39,14 @@ export default function Produto() {
   const [selMulti, setSelMulti] = useState<Record<string, string>>({});
   const [larg, setLarg] = useState(1);
   const [alt, setAlt] = useState(1);
+  const [arteCaneca, setArteCaneca] = useState<Arte | null>(null);
+  const [corAlcaCaneca, setCorAlcaCaneca] = useState('#DD6F98');
+
+  // Canecas com forma cadastrada viram a visualização 3D (gira, aceita a
+  // foto do cliente) — as demais (Pires, etc.) continuam com a foto plana.
+  const variante3D = produto?.tipo === 'simples' ? CANECA_VARIANTE_POR_NOME[produto.nome] : undefined;
+  const temCorAlca = variante3D === 'colher';
+  const temEfeitoMagico = variante3D === 'magicaColher' || variante3D === 'magicaCoracao';
 
   // Reseta a seleção sempre que o produto (parâmetro da rota) muda.
   useEffect(() => {
@@ -41,6 +56,8 @@ export default function Produto() {
     setSelMulti(produto?.tipo === 'multi' ? Object.fromEntries(produto.dims.map(d => [d.key, d.options[0]])) : {});
     setLarg(1);
     setAlt(1);
+    setArteCaneca(null);
+    setCorAlcaCaneca('#DD6F98');
     window.scrollTo(0, 0);
   }, [nome]);
 
@@ -81,8 +98,16 @@ export default function Produto() {
     produto.tipo === 'multi' ? (precoMultiCheio != null ? precoMultiCheio * fator : null) :
     precoMedidaCheio! * fator;
 
+  const corAlcaLabel: Record<string, string> = { '#DD6F98': 'Rosa', '#3B82F6': 'Azul', '#22C55E': 'Verde', '#1a1a1a': 'Preta' };
+
   const nomeParaPedido =
-    produto.tipo === 'simples' ? (produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome) :
+    produto.tipo === 'simples' ? (
+      produto.cores?.length && corSelecionada
+        ? `${produto.nome} (${corSelecionada})`
+        : temCorAlca
+        ? `${produto.nome} (alça ${corAlcaLabel[corAlcaCaneca] ?? corAlcaCaneca})`
+        : produto.nome
+    ) :
     produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMultiAtual[d.key]).join(' · ')})` :
     `${produto.nome} (${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m = ${m2.toFixed(2).replace('.', ',')}m²)`;
 
@@ -94,13 +119,13 @@ export default function Produto() {
 
   function adicionar() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, variante3D && arteCaneca ? { frente: arteCaneca } : undefined);
     navigate('/produtos');
   }
 
   function comprarAgora() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, variante3D && arteCaneca ? { frente: arteCaneca } : undefined);
     navigate('/carrinho', { state: { openCheckout: true } });
   }
 
@@ -112,16 +137,27 @@ export default function Produto() {
           <span className="link" onClick={() => navigate('/')}>Início</span> / <span className="link" onClick={irParaCategoria}>{produto.categoria}</span> / <span className="now">{produto.nome}</span>
         </div>
         <div className="pd-layout">
-          <div className="detail-thumb" data-cat={produto.categoria}>
-            <span className="cat-tag">{produto.categoria}</span>
-            {produto.tipo === 'simples' && produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
-            {produto.tipo !== 'simples' && percentual > 0 ? <span className="badge-multi">-{percentual}%</span> : null}
-            {fotoExibida ? (
-              <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
-            ) : (
-              <CategoryIcon categoria={produto.categoria} />
-            )}
-          </div>
+          {variante3D ? (
+            <Suspense fallback={<div className="detail-thumb" data-cat={produto.categoria}><CategoryIcon categoria={produto.categoria} /></div>}>
+              <CanecaViewer3D
+                variante={variante3D}
+                corAlca={corAlcaCaneca}
+                fotoDataUrl={arteCaneca && ehImagem(arteCaneca) ? arteCaneca.dataUrl : null}
+                mostrarEfeito={temEfeitoMagico}
+              />
+            </Suspense>
+          ) : (
+            <div className="detail-thumb" data-cat={produto.categoria}>
+              <span className="cat-tag">{produto.categoria}</span>
+              {produto.tipo === 'simples' && produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
+              {produto.tipo !== 'simples' && percentual > 0 ? <span className="badge-multi">-{percentual}%</span> : null}
+              {fotoExibida ? (
+                <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
+              ) : (
+                <CategoryIcon categoria={produto.categoria} />
+              )}
+            </div>
+          )}
 
           <div>
             <div className="pd-cat">{produto.categoria}</div>
@@ -155,6 +191,24 @@ export default function Produto() {
                 </div>
               </div>
             ) : null}
+
+            {variante3D && (
+              <>
+                <ArteUpload arte={arteCaneca} onArteChange={setArteCaneca} label="Sua foto" nota="Aparece direto na caneca 3D ao lado — arraste pra girar e conferir." />
+                {temCorAlca && (
+                  <div className="field-group">
+                    <label>Cor da alça</label>
+                    <div className="swatch-row">
+                      {Object.entries(corAlcaLabel).map(([hex, nomeCor]) => (
+                        <button key={hex} className={`swatch ${corAlcaCaneca === hex ? 'on' : ''}`} onClick={() => setCorAlcaCaneca(hex)}>
+                          {nomeCor}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {produto.tipo === 'simples' && (
               <div className="field-group">

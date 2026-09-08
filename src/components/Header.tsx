@@ -45,6 +45,11 @@ export default function Header({
     navigate('/produtos');
     setMobileNavOpen(false);
   }
+  function irParaPersonalizar() {
+    onGoPage('personalize');
+    navigate('/');
+    setMobileNavOpen(false);
+  }
   function irParaSobre() {
     navigate('/', { state: { page: 'sobre' } });
     setMobileNavOpen(false);
@@ -108,6 +113,7 @@ export default function Header({
         <nav className="cat-nav-row">
           <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
           <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
+          <a className={page === 'personalize' ? 'active' : ''} onClick={irParaPersonalizar}>Personalizar</a>
           <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
           <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
         </nav>
@@ -118,6 +124,7 @@ export default function Header({
           </form>
           <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
           <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
+          <a className={page === 'personalize' ? 'active' : ''} onClick={irParaPersonalizar}>Personalizar</a>
           <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
           <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
         </nav>
