@@ -9,6 +9,7 @@ export default function Footer() {
         <span>🎨 Bella Arte — Gráfica &amp; Personalizados, São Paulo/SP</span>
         <nav className="foot-links">
           <a onClick={() => navigate('/', { state: { page: 'como' } })}>Como funciona</a>
+          <a onClick={() => navigate('/', { state: { page: 'sobre' } })}>Sobre Nós</a>
           <a onClick={() => navigate('/', { state: { page: 'contato' } })}>Contato</a>
         </nav>
       </div>

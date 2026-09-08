@@ -14,7 +14,7 @@ import { useProdutos } from './hooks/useProdutos';
 import { whatsappLink } from './config';
 import heroCanecas from './assets/hero-canecas.jpg';
 
-export type Page = 'inicio' | 'como' | 'personalize' | 'contato';
+export type Page = 'inicio' | 'como' | 'sobre' | 'personalize' | 'contato';
 
 export default function StoreApp() {
   const { settings } = useSiteSettings();
@@ -164,6 +164,37 @@ export default function StoreApp() {
             </div>
           </div>
         </section>
+      )}
+
+      {page === 'sobre' && (
+        <div className="shell" style={{ paddingTop: 68, paddingBottom: 40 }}>
+          <div className="section-head" style={{ margin: '0 auto 8px', textAlign: 'center', maxWidth: 640 }}>
+            <div className="kicker">Sobre nós</div>
+            <h2 className="serif">A Bella Arte é feita de gente que gosta do que faz</h2>
+          </div>
+          {/* Texto de rascunho — troque pelo texto real da loja quando quiser
+              (história, desde quando existe, o que vocês fazem de diferente). */}
+          <div style={{ maxWidth: 640, margin: '28px auto 0', fontSize: 14.5, color: 'var(--ink-soft)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p>
+              A Bella Arte nasceu da vontade de transformar ideias em algo que dá pra segurar na mão — de um cartão de visita
+              que causa boa impressão a uma caneca que vira presente de verdade. Cada pedido passa por gente de verdade, que
+              confere os detalhes antes de mandar pra produção.
+            </p>
+            <p>
+              Trabalhamos com adesivos, cartões de visita, canecas, banners e muito mais, sempre buscando o equilíbrio entre
+              preço justo, qualidade de impressão e um atendimento que resolve rápido — direto pelo WhatsApp, sem enrolação.
+            </p>
+            <p>
+              Esse texto é um rascunho inicial — é só me passar a história de verdade da Bella Arte (desde quando existe, o
+              que vocês fazem de diferente, quem está por trás) que eu troco por aqui.
+            </p>
+          </div>
+          <div className="hero-ctas" style={{ justifyContent: 'center', marginTop: 30 }}>
+            <a className="cta-whats" href={whatsappLink(whatsapp, 'Olá! Vi a página Sobre Nós da Bella Arte e queria saber mais.')} target="_blank" rel="noopener noreferrer">
+              <WhatsAppIcon /> Falar no WhatsApp
+            </a>
+          </div>
+        </div>
       )}
 
       {page === 'personalize' && (

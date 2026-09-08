@@ -8,13 +8,14 @@ import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCart } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
-import { useProdutos } from '../hooks/useProdutos';
 import type { Page } from '../StoreApp';
 
 // Extraído de StoreApp.tsx. "Produtos" e o carrinho já são rotas de verdade
-// (/produtos, /carrinho); "Início" volta pra Home. As demais páginas-seção
-// (Como funciona/Contato) saíram do cabeçalho — o menu principal agora é
-// por categoria (redesign aprovado), igual navegar num catálogo de verdade.
+// (/produtos, /carrinho); "Início" volta pra Home. O menu principal é fixo
+// (Início/Produtos/Contato) — chegou a ser por categoria dinâmica, mas com
+// o catálogo puxando categoria direto do ERP (nomes variados, alguns só
+// fazem sentido lá dentro) isso virou uma lista longa e confusa aqui em
+// cima; escolher categoria já é papel da barra lateral em /produtos.
 export default function Header({
   page,
   onGoPage,
@@ -28,7 +29,6 @@ export default function Header({
   const { toast } = useToast();
   const { cart } = useCart();
   const { promocao } = usePromocao();
-  const { catalogo } = useProdutos();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -36,11 +36,21 @@ export default function Header({
   const [loginOpen, setLoginOpen] = useState(false);
   const [busca, setBusca] = useState('');
 
-  const categorias = Array.from(new Set(catalogo.map(p => p.categoria))).sort();
-  const categoriaAtiva = location.pathname === '/produtos' ? new URLSearchParams(location.search).get('categoria') : null;
-
-  function irParaCategoria(categoria: string | null) {
-    navigate(categoria ? `/produtos?categoria=${encodeURIComponent(categoria)}` : '/produtos');
+  function irParaInicio() {
+    onGoPage('inicio');
+    navigate('/');
+    setMobileNavOpen(false);
+  }
+  function irParaProdutos() {
+    navigate('/produtos');
+    setMobileNavOpen(false);
+  }
+  function irParaSobre() {
+    navigate('/', { state: { page: 'sobre' } });
+    setMobileNavOpen(false);
+  }
+  function irParaContato() {
+    navigate('/', { state: { page: 'contato' } });
     setMobileNavOpen(false);
   }
 
@@ -96,20 +106,20 @@ export default function Header({
           </div>
         </div>
         <nav className="cat-nav-row">
-          {categorias.map(cat => (
-            <a key={cat} className={categoriaAtiva === cat ? 'active' : ''} onClick={() => irParaCategoria(cat)}>{cat}</a>
-          ))}
+          <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
+          <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
+          <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
+          <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
         </nav>
         <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
           <form className="search-box header-search-mobile" onSubmit={buscar}>
             <SearchIcon />
             <input type="text" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
           </form>
-          <a className={page === 'inicio' ? 'active' : ''} onClick={() => { onGoPage('inicio'); navigate('/'); setMobileNavOpen(false); }}>Início</a>
-          <a className={location.pathname === '/produtos' && !categoriaAtiva ? 'active' : ''} onClick={() => irParaCategoria(null)}>Todos os produtos</a>
-          {categorias.map(cat => (
-            <a key={cat} className={categoriaAtiva === cat ? 'active' : ''} onClick={() => irParaCategoria(cat)}>{cat}</a>
-          ))}
+          <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
+          <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
+          <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
+          <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
         </nav>
       </header>
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
