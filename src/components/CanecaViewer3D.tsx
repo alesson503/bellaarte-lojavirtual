@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { type CanecaVarianteKey } from '../lib/canecaVariantes';
 
 // Formas 3D genéricas (cilindro/coração feitos na hora, sem depender de
@@ -22,12 +23,25 @@ interface VarianteConfig {
   handleColorFixa?: string;
   colher: boolean;
   tampa: boolean;
+  // Se tiver, usa o modelo 3D de verdade (.glb) em vez de montar as formas
+  // na hora — o corpo do modelo precisa se chamar "Cup" e a alça o nome que
+  // estiver em `nomeAlca` (o resto das peças pega a cor da alça também).
+  modelPath?: string;
+  nomeCorpo?: string;
+  nomeAlca?: string;
+  // Alguns .glb exportados de script (trimesh/Blender sem conversão de eixo)
+  // vêm "deitados" (Z pra cima em vez de Y) — essa rotação corrige isso
+  // antes de qualquer outro cálculo (altura, UV etc.).
+  rotacaoInicial?: number;
 }
 
 const PROD_CONFIG: Record<CanecaVarianteKey, VarianteConfig> = {
   branca:        { bodyShape: 'cilindro', rTop: 1, rBot: 1, h: 1.85, handleShape: 'argola', corAlcaPropria: false, colher: false, tampa: false },
   '180ml':       { bodyShape: 'cilindro', rTop: 0.88, rBot: 0.88, h: 1.7, handleShape: 'argola', corAlcaPropria: false, colher: false, tampa: false },
-  colher:        { bodyShape: 'cilindro', rTop: 1, rBot: 1, h: 1.85, handleShape: 'argola', corAlcaPropria: true, colher: true, tampa: false },
+  // Modelo 3D de verdade que o dono mandou (caneca_rosa.glb) — corpo "Cup" +
+  // alça "Pink_Handle" + colher em 3 partes. Sem UV original (gerado na
+  // hora, ver gerarUVCilindrico), por isso ainda pode precisar de ajuste.
+  colher:        { bodyShape: 'cilindro', rTop: 1, rBot: 1, h: 1.85, handleShape: 'argola', corAlcaPropria: true, colher: true, tampa: false, modelPath: '/models/caneca_alca_colorida_colher.glb', nomeCorpo: 'Cup', nomeAlca: 'Pink_Handle', rotacaoInicial: -Math.PI / 2 },
   // Alça Coração e Mágica Corpo Coração: corpo normal (cilíndrico) — só a
   // alça é em formato de coração, igual a caneca de referência que o dono
   // mandou. "Corpo Coração" no nome é só o material que muda de cor com o
@@ -49,6 +63,55 @@ function pontosCoracao(escala: number): THREE.Vector2[] {
     pts.push(new THREE.Vector2((x / 16) * escala, (y / 16) * escala));
   }
   return pts;
+}
+
+// Ângulo em volta do eixo Y — mesma convenção usada tanto pra gerar o UV do
+// corpo quanto pra descobrir onde a alça está de verdade (então os dois
+// sempre batem, sem precisar adivinhar um deslocamento fixo).
+function anguloVolta(x: number, z: number): number {
+  return Math.atan2(z, x);
+}
+
+// Gera UV cilíndrico pra uma geometria que não veio com UV nenhum (o caso
+// do caneca_rosa.glb — feito por script, sem "desenrolar" manual). Não é
+// perfeito pra qualquer forma, mas funciona bem pra algo parecido com um
+// copo/cilindro.
+function gerarUVCilindrico(geo: THREE.BufferGeometry) {
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const alturaMin = bb.min.y;
+  const alturaRange = (bb.max.y - bb.min.y) || 1;
+  const pos = geo.attributes.position;
+  const uv = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    const theta = anguloVolta(pos.getX(i), pos.getZ(i));
+    uv[i * 2] = theta / (Math.PI * 2) + 0.5;
+    uv[i * 2 + 1] = (pos.getY(i) - alturaMin) / alturaRange;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+
+// Encaixa o modelo carregado no mesmo "tamanho de referência" das canecas
+// procedurais (altura ~1.85, base sentada em y = -altura/2) — os modelos
+// .glb chegam em escalas/origens bem diferentes entre si. Escala e
+// centralização usam só o corpo (`nomeCorpo`), não o conjunto inteiro —
+// senão um acessório que sobra pra um lado (a colher, por ex.) puxa o
+// centro pro lado errado e a caneca gira fora do eixo dela mesma.
+function normalizarModelo(root: THREE.Object3D, alturaAlvo: number, nomeCorpo: string) {
+  const corpo = root.getObjectByName(nomeCorpo) ?? root;
+  const box1 = new THREE.Box3().setFromObject(corpo);
+  const tamanho = new THREE.Vector3();
+  box1.getSize(tamanho);
+  const escala = alturaAlvo / (tamanho.y || 1);
+  root.scale.setScalar(escala);
+  root.updateMatrixWorld(true);
+
+  const box2 = new THREE.Box3().setFromObject(corpo);
+  const centro = new THREE.Vector3();
+  box2.getCenter(centro);
+  root.position.x -= centro.x;
+  root.position.z -= centro.z;
+  root.position.y -= box2.min.y + alturaAlvo / 2;
 }
 
 export default function CanecaViewer3D({
@@ -158,9 +221,12 @@ export default function CanecaViewer3D({
     let handle: THREE.Mesh | null = null;
     let colherGroup: THREE.Group | null = null;
     let tampaGroup: THREE.Group | null = null;
+    let modeloGrupo: THREE.Group | null = null;
+    const gltfLoader = new GLTFLoader();
+    let geracaoAtual = 0; // ignora um modelo que termina de carregar depois de já ter trocado de produto
 
     function limparGrupo() {
-      ([body, inner, handle, colherGroup, tampaGroup] as (THREE.Object3D | null)[]).forEach(obj => {
+      ([body, inner, handle, colherGroup, tampaGroup, modeloGrupo] as (THREE.Object3D | null)[]).forEach(obj => {
         if (!obj) return;
         mugGroup.remove(obj);
         obj.traverse(o => {
@@ -168,7 +234,7 @@ export default function CanecaViewer3D({
           mesh.geometry?.dispose?.();
         });
       });
-      body = inner = handle = colherGroup = tampaGroup = null;
+      body = inner = handle = colherGroup = tampaGroup = modeloGrupo = null;
     }
 
     function criarColher() {
@@ -203,6 +269,61 @@ export default function CanecaViewer3D({
     function construirCaneca(cfg: VarianteConfig) {
       limparGrupo();
 
+      if (cfg.modelPath) {
+        texture.offset.x = 0.75; // até o modelo carregar, mantém o padrão
+        geracaoAtual++;
+        const minhaGeracao = geracaoAtual;
+        const grupo = new THREE.Group();
+        modeloGrupo = grupo;
+        mugGroup.add(grupo);
+        gltfLoader.load(
+          cfg.modelPath,
+          gltf => {
+            if (minhaGeracao !== geracaoAtual) return; // trocou de produto antes de terminar de carregar
+            const root = gltf.scene;
+            if (cfg.rotacaoInicial) root.rotation.x = cfg.rotacaoInicial;
+            root.updateMatrixWorld(true);
+            normalizarModelo(root, cfg.h, cfg.nomeCorpo || 'Cup');
+
+            let anguloAlca: number | null = null;
+            if (cfg.nomeAlca) {
+              const alcaObj = root.getObjectByName(cfg.nomeAlca);
+              if (alcaObj) {
+                const posAlca = new THREE.Vector3();
+                alcaObj.getWorldPosition(posAlca);
+                anguloAlca = anguloVolta(posAlca.x, posAlca.z);
+              }
+            }
+            // Alinha o "buraco" (área sem impressão) exatamente embaixo da
+            // alça de verdade, calculado a partir da posição real dela no
+            // modelo — em vez de um valor fixo (que só funciona pra forma
+            // que eu desenhei na mão).
+            texture.offset.x = anguloAlca != null ? (0.5 - anguloAlca / (Math.PI * 2)) : 0.75;
+
+            root.traverse(obj => {
+              const mesh = obj as THREE.Mesh;
+              if (!mesh.isMesh) return;
+              // Esse modelo só tem posição dos vértices, sem normal — sem
+              // isso a iluminação sai errada (peça toda escura/estranha).
+              if (!mesh.geometry.attributes.normal) mesh.geometry.computeVertexNormals();
+              if (obj.name === 'Cup') {
+                gerarUVCilindrico(mesh.geometry);
+                mesh.material = materiais.body;
+              } else {
+                mesh.material = materiais.handle;
+              }
+            });
+
+            grupo.add(root);
+            atualizarCorAlca();
+          },
+          undefined,
+          err => console.error('Não consegui carregar o modelo 3D da caneca:', err),
+        );
+        return;
+      }
+
+      texture.offset.x = 0.75;
       {
         const geo = new THREE.CylinderGeometry(cfg.rTop, cfg.rBot, cfg.h, 64, 1, false);
         body = new THREE.Mesh(geo, materiais.body);
@@ -247,7 +368,7 @@ export default function CanecaViewer3D({
       produtoAtual = v;
       const cfg = PROD_CONFIG[v];
       construirCaneca(cfg);
-      camera.position.setLength(cfg.tampa || cfg.handleShape === 'coracao' ? 4.7 : 4.2);
+      camera.position.setLength(cfg.modelPath ? 5.6 : cfg.tampa || cfg.handleShape === 'coracao' ? 4.7 : 4.2);
     }
 
     camera.position.set(0, 0.3, 4.2);
