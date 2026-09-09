@@ -6,9 +6,9 @@
      mantidos de propósito — usados em todo o CSS, trocar só o valor evita
      reescrever cada componente. */
   --ink: #241F1B; --ink-soft: #4A4038; --graphite: #8C8074; --graphite-faint: #B4A996;
-  --paper: #F3ECE0; --card: #FFFFFF; --line: #E8DECB;
+  --paper: #FCEEF2; --card: #FFFFFF; --line: #F5D6E2;
   --violet: #DD6F98; --violet-deep: #B8496F; --violet-ink: #FFFFFF; --violet-soft: color-mix(in srgb, var(--violet) 12%, white);
-  --blush: #EFDECA; --blush-line: #E8DECB; --blush-deep: #A83D63;
+  --blush: #FBE4ED; --blush-line: #F5D6E2; --blush-deep: #A83D63;
   --amber: #B45309; --amber-bg: #FEF3C7;
   --corte: oklch(52% 0.15 40); --corte-bg: oklch(94% 0.03 40);
   --seguranca: oklch(52% 0.1 165); --seguranca-bg: oklch(94% 0.03 165);
