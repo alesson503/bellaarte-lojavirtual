@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import AdesivoConfigurator from './components/AdesivoConfigurator';
@@ -6,7 +6,7 @@ import CartaoConfigurator from './components/CartaoConfigurator';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProductCard from './components/ProductCard';
-import { CategoryIcon, SearchIcon, WhatsAppIcon } from './icons';
+import { WhatsAppIcon } from './icons';
 import { useSiteSettings } from './context/SiteSettingsContext';
 import { useCart } from './context/CartContext';
 import { useWhatsapp } from './context/WhatsappContext';
@@ -16,6 +16,16 @@ import { whatsappLink } from './config';
 import heroCanecas from './assets/hero-canecas.jpg';
 
 export type Page = 'inicio' | 'como' | 'sobre' | 'personalize' | 'contato';
+
+// Emoji + subtítulo por categoria na Home — mesma ideia do protótipo
+// `loja-virtual` (page.tsx), adaptado pras categorias reais daqui.
+const CATEGORIA_INFO: Record<string, { emoji: string; sub: string }> = {
+  Caneca: { emoji: '☕', sub: 'Personalizadas' },
+  Adesivo: { emoji: '✨', sub: 'Estilo pra tudo' },
+  'Cartão de Visita': { emoji: '💌', sub: 'Sua marca' },
+  Banner: { emoji: '🚩', sub: 'Chame atenção' },
+  Outros: { emoji: '🎁', sub: 'Diversos' },
+};
 
 export default function StoreApp() {
   const { settings } = useSiteSettings();
@@ -33,6 +43,23 @@ export default function StoreApp() {
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
+
+  // Carrossel do hero — foto real da loja (se o dono cadastrou uma em
+  // /admin/configuracoes) primeiro, seguida das fotos de ambiente do
+  // protótipo `loja-virtual`. Roda sozinho a cada 5s, com setas e bolinhas.
+  const fotosHero = useMemo(
+    () => [
+      ...(settings.heroPhotoUrl ? [settings.heroPhotoUrl] : [heroCanecas]),
+      '/banner/hero-1.png', '/banner/hero-2.png', '/banner/hero-3.png', '/banner/hero-4.png',
+    ],
+    [settings.heroPhotoUrl],
+  );
+  const [heroSlide, setHeroSlide] = useState(0);
+  const irParaSlide = useCallback((i: number) => setHeroSlide((i + fotosHero.length) % fotosHero.length), [fotosHero.length]);
+  useEffect(() => {
+    const t = setInterval(() => setHeroSlide(s => (s + 1) % fotosHero.length), 5000);
+    return () => clearInterval(t);
+  }, [fotosHero.length]);
 
   function goPage(next: Page, scrollToId?: string) {
     setPage(next);
@@ -67,84 +94,117 @@ export default function StoreApp() {
   }, [page, scrollTarget]);
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header page={page} onGoPage={goPage} onOpenCart={() => navigate('/carrinho')} />
-
+      <main className="flex-1">
       {page === 'inicio' && (
-        <div className="shell hero">
-          <div className="hero-grid">
-            <div>
-              <div className="eyebrow"><span className="dot" />{settings.heroEyebrow}</div>
-              <h1 className="serif">{settings.heroTitleLine1} <em>{settings.heroTitleEm}</em><br />{settings.heroTitleLine2}</h1>
-              <p className="lede">{settings.heroLede}</p>
-              <div className="hero-ctas">
-                <button className="btn-primary" onClick={() => goPage('personalize', 'adesivos')}>Montar meu adesivo</button>
-                <button className="btn-ghost" onClick={() => goPage('personalize', 'cartoes')}>Ver cartões de visita →</button>
+        <>
+          <section className="mx-auto max-w-6xl px-4 pt-6">
+            <div className="relative h-[260px] overflow-hidden rounded-3xl border border-cream-200 shadow-sm sm:h-[340px] md:h-[440px]">
+              <img
+                src={fotosHero[heroSlide]}
+                alt="Bella Arte"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(to right, rgba(253,241,246,0.94), rgba(253,241,246,0.6) 42%, rgba(253,241,246,0.1) 66%, rgba(253,241,246,0) 80%)' }}
+              />
+              <div className="absolute inset-0 flex items-center px-6 md:px-12">
+                <div className="max-w-md">
+                  <span className="inline-block rounded-full bg-white/80 px-4 py-1 text-sm font-bold text-rose shadow-sm">{settings.heroEyebrow}</span>
+                  <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight text-ink md:text-4xl">
+                    {settings.heroTitleLine1} <span className="text-rose">{settings.heroTitleEm}</span> {settings.heroTitleLine2}
+                  </h1>
+                  <p className="mt-2 hidden max-w-sm text-sm text-ink-soft sm:block md:text-base">{settings.heroLede}</p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button onClick={() => navigate('/produtos')} className="rounded-full bg-rose px-6 py-2.5 font-bold text-white shadow-sm transition hover:brightness-95">
+                      🛒 Ver produtos
+                    </button>
+                    <a href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte.')} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white bg-white/85 px-6 py-2.5 font-bold text-ink shadow-sm transition hover:bg-white">
+                      💬 Falar no WhatsApp
+                    </a>
+                  </div>
+                </div>
               </div>
-              <div className="hero-trust">
-                <div><b>60</b><span>produtos cadastrados</span></div>
-                <div><b>48h</b><span>produção média</span></div>
-                <div><b>100%</b><span>arte revisada com você</span></div>
+
+              <button onClick={() => irParaSlide(heroSlide - 1)} aria-label="Anterior" className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-xl text-ink shadow transition hover:bg-white">‹</button>
+              <button onClick={() => irParaSlide(heroSlide + 1)} aria-label="Próximo" className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-xl text-ink shadow transition hover:bg-white">›</button>
+
+              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
+                {fotosHero.map((_, i) => (
+                  <button
+                    key={i} onClick={() => irParaSlide(i)} aria-label={`Slide ${i + 1}`}
+                    className={`h-2.5 rounded-full transition-all ${i === heroSlide ? 'w-6 bg-rose' : 'w-2.5 bg-white/90'}`}
+                  />
+                ))}
               </div>
             </div>
-            <div className="peel-stage">
-              <div className="hero-photo">
-                <img src={settings.heroPhotoUrl || heroCanecas} alt="Canecas personalizadas Bella Arte, branca e rosa, com a logo BA" />
-              </div>
-              <div className="stage-tag">🏷️</div>
-              <div className="float-chip c1">✂️ Recorte sob medida</div>
-              <div className="float-chip c2">🎨 Sua arte, seu jeito</div>
+
+            <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 rounded-2xl border border-cream-200 bg-white/70 px-4 py-3 text-sm font-semibold text-ink-soft">
+              <span>🔒 Compra segura</span>
+              <span>🎨 Arte revisada</span>
+              <span>⚡ Produção em 48h</span>
+              <span>💬 Atendimento direto</span>
             </div>
-          </div>
-        </div>
-      )}
+          </section>
 
-      {page === 'inicio' && (
-        <div className="shell">
-          <div className="trust-badges">
-            <div><span className="ic">🔒</span>Compra segura</div>
-            <div><span className="ic">🎨</span>Arte revisada</div>
-            <div><span className="ic">⚡</span>Produção em 48h</div>
-            <div><span className="ic">💬</span>Atendimento direto</div>
-          </div>
-
-          <div className="cats-title serif">O que você precisa hoje?</div>
-          <div className="cats-row">
-            {categorias.map(cat => (
-              <button key={cat} className="cat-circle" onClick={() => goProdutos(cat)}>
-                <div className="ic"><CategoryIcon categoria={cat} /></div>
-                <b>{cat}</b>
+          <section className="mx-auto max-w-6xl px-4 py-10">
+            <h2 className="mb-5 font-display text-xl font-bold">O que você precisa hoje?</h2>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+              {categorias.map(cat => {
+                const info = CATEGORIA_INFO[cat] ?? { emoji: '🎁', sub: cat };
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => goProdutos(cat)}
+                    className="group flex flex-col items-center gap-1 rounded-2xl border border-cream-200 bg-white p-4 text-center transition hover:-translate-y-1 hover:border-rose hover:shadow-md"
+                  >
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-2xl transition group-hover:bg-rose-light">{info.emoji}</span>
+                    <span className="mt-1 font-display text-sm font-bold text-ink">{cat}</span>
+                    <span className="text-xs text-ink-muted">{info.sub}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => goProdutos('Todos')}
+                className="group flex flex-col items-center gap-1 rounded-2xl border border-cream-200 bg-white p-4 text-center transition hover:-translate-y-1 hover:border-rose hover:shadow-md"
+              >
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-2xl transition group-hover:bg-rose-light">⭐</span>
+                <span className="mt-1 font-display text-sm font-bold text-ink">Ver tudo</span>
+                <span className="text-xs text-ink-muted">Toda a loja</span>
               </button>
-            ))}
-            <button className="cat-circle" onClick={() => goProdutos('Todos')}>
-              <div className="ic"><SearchIcon /></div>
-              <b>Ver tudo</b>
-            </button>
-          </div>
+            </div>
+          </section>
 
           {maisPedidos.length > 0 && (
-            <>
-              <div className="section-title-row">
-                <h2 className="serif">Mais pedidos</h2>
-                <a onClick={() => goProdutos('Todos')}>Ver todos →</a>
+            <section className="mx-auto max-w-6xl px-4 pb-0">
+              <div className="mb-8 flex items-end justify-between">
+                <div>
+                  <h2 className="flex items-center gap-2 font-display text-2xl font-extrabold text-ink md:text-3xl">🔥 Destaques da Loja</h2>
+                  <p className="mt-1 text-ink-muted">Os produtos mais amados pelos nossos clientes 💖</p>
+                </div>
+                <button onClick={() => goProdutos('Todos')} className="hidden rounded-full border border-cream-200 bg-white px-5 py-2 text-sm font-bold text-rose hover:bg-cream-100 md:block">
+                  Ver todos →
+                </button>
               </div>
-              <div className="gallery">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4">
                 {maisPedidos.map((p, i) => (
                   <ProductCard
                     key={('id' in p ? p.id : p.nome) + i}
                     produto={p}
-                    onGoPersonalize={id => goPage('personalize', id)}
+                    index={i}
                     onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
                   />
                 ))}
               </div>
-            </>
+            </section>
           )}
-        </div>
+        </>
       )}
 
       {page === 'como' && (
-        <section className="band">
+        <section className="band pb-0">
           <div className="shell">
             <div className="section-head" style={{ margin: '0 auto 34px', textAlign: 'center' }}>
               <div className="kicker">Como funciona</div>
@@ -169,7 +229,7 @@ export default function StoreApp() {
       )}
 
       {page === 'sobre' && (
-        <div className="shell" style={{ paddingTop: 68, paddingBottom: 40 }}>
+        <div className="shell" style={{ paddingTop: 68, paddingBottom: 0 }}>
           <div className="section-head" style={{ margin: '0 auto 8px', textAlign: 'center', maxWidth: 640 }}>
             <div className="kicker">Sobre nós</div>
             <h2 className="serif">A Bella Arte é feita de gente que gosta do que faz</h2>
@@ -195,21 +255,27 @@ export default function StoreApp() {
       )}
 
       {page === 'contato' && (
-        <div className="shell" style={{ paddingBottom: 20, paddingTop: 68 }}>
-          <div className="final-cta">
+        // Full-bleed (sem shell/cantos arredondados) de propósito — encosta
+        // direto no rodapé (mesmo bg-ink) e vira um bloco preto só, em vez
+        // de parecer uma caixa flutuando separada em cima do rodapé.
+        <div className="bg-ink px-4 pb-16 pt-24 text-cream-50">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
             <div>
-              <h2 className="serif">Não achou o que precisa?</h2>
-              <p>Manda uma mensagem — a gente monta um orçamento sob medida em minutos.</p>
+              <h2 className="font-display text-2xl font-extrabold md:text-3xl">Não achou o que precisa?</h2>
+              <p className="mt-2 text-cream-200">Manda uma mensagem — a gente monta um orçamento sob medida em minutos.</p>
             </div>
-            <a className="cta-whats" href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte e não achei o que eu precisava — pode me ajudar?')}
-              target="_blank" rel="noopener noreferrer" style={{ background: 'var(--violet)' }}>
+            <a
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-rose px-6 py-3 font-bold text-white transition hover:brightness-95"
+              href={whatsappLink(whatsapp, 'Olá! Vim do site da Bella Arte e não achei o que eu precisava — pode me ajudar?')}
+              target="_blank" rel="noopener noreferrer"
+            >
               <WhatsAppIcon /> Falar no WhatsApp
             </a>
           </div>
         </div>
       )}
-
+      </main>
       <Footer />
-    </>
+    </div>
   );
 }

@@ -9,7 +9,8 @@ import CheckoutModal from '../components/CheckoutModal';
 
 // Página de verdade pro que era CartModal.tsx. O checkout continua sendo
 // um modal (CheckoutModal), aberto a partir daqui — ele quem cria o
-// pedido de verdade na API.
+// pedido de verdade na API. Visual: `carrinho-drawer.tsx` do protótipo
+// `loja-virtual` (card por item, com foto do produto).
 export default function Carrinho() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,39 +38,61 @@ export default function Carrinho() {
   }
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => {}} />
-      <div className="shell" style={{ paddingTop: 40, paddingBottom: 68, maxWidth: 640 }}>
-        <h2 className="serif">Meu carrinho</h2>
-        <p className="modal-sub">Itens que você foi adicionando.</p>
-        <div>
-          {cart.length === 0 ? (
-            <div className="cart-empty">Seu carrinho está vazio.<br />Escolha um produto pra começar.</div>
-          ) : (
-            cart.map((item, i) => (
-              <div className="cart-row" key={i}>
-                <div className="info">
-                  <b>{item.nome}{item.quantidade > 1 ? ` × ${item.quantidade}` : ''}</b>
-                  {item.observacao && <div>obs: {item.observacao}</div>}
-                  {item.arte?.frente && <div>📎 arte (frente): {item.arte.frente.nome}</div>}
-                  {item.arte?.verso && <div>📎 arte (verso): {item.arte.verso.nome}</div>}
+      <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-0 pt-10">
+        <h1 className="font-display text-2xl font-extrabold text-ink">Meu carrinho 🛒</h1>
+        <p className="mt-1 text-sm text-ink-muted">Itens que você foi adicionando.</p>
+
+        {cart.length === 0 ? (
+          <div className="mt-8 flex flex-col items-center gap-2 rounded-2xl border border-cream-200 bg-white p-10 text-center text-ink-muted">
+            <span className="text-4xl">🛍️</span>
+            <p>Seu carrinho está vazio.<br />Escolha um produto pra começar.</p>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-3">
+            {cart.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-2xl border border-cream-200 bg-white p-3">
+                <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-rose-50">
+                  {item.imagem ? (
+                    <img src={item.imagem} alt={item.nome} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">🎁</span>
+                  )}
                 </div>
-                <div className="price-col">
-                  <b>{fmt(item.preco * item.quantidade)}</b>
-                  <button className="cart-remove" title="Remover" onClick={() => removeFromCart(i)}>🗑️</button>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-ink">{item.nome}{item.quantidade > 1 ? ` × ${item.quantidade}` : ''}</p>
+                  {item.observacao && <p className="mt-0.5 text-xs text-ink-muted">obs: {item.observacao}</p>}
+                  {item.arte?.frente && <p className="mt-0.5 text-xs text-ink-muted">📎 arte (frente): {item.arte.frente.nome}</p>}
+                  {item.arte?.verso && <p className="mt-0.5 text-xs text-ink-muted">📎 arte (verso): {item.arte.verso.nome}</p>}
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="font-display font-bold text-rose">{fmt(item.preco * item.quantidade)}</span>
+                  <button onClick={() => removeFromCart(i)} className="text-lg text-ink-muted hover:text-rose" title="Remover" aria-label="Remover">🗑️</button>
                 </div>
               </div>
-            ))
-          )}
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 flex items-center justify-between border-t border-cream-200 pt-5">
+          <span className="text-ink-muted">Total</span>
+          <span className="font-display text-2xl font-extrabold text-ink">{fmt(total)}</span>
         </div>
-        <div className="cart-total-row"><span>Total</span><b>{fmt(total)}</b></div>
-        <div className="modal-actions">
-          <button className="btn-outline-full btn-flex" onClick={() => navigate('/produtos')}>Continuar vendo produtos</button>
-          <button className="btn-primary btn-flex" onClick={finalizarPedido}>Finalizar pedido</button>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button onClick={() => navigate('/produtos')} className="rounded-2xl border border-cream-200 px-6 py-3.5 font-bold text-ink transition hover:border-rose hover:text-rose">
+            Continuar vendo produtos
+          </button>
+          <button onClick={finalizarPedido} className="rounded-2xl bg-rose px-6 py-3.5 font-bold text-white transition hover:brightness-95">
+            Finalizar pedido
+          </button>
         </div>
       </div>
       <Footer />
       <CheckoutModal open={checkoutOpen} cart={cart} onClose={() => setCheckoutOpen(false)} />
-    </>
+    </div>
   );
 }

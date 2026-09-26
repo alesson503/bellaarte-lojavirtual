@@ -4,7 +4,7 @@ import { useToast } from './ToastContext';
 
 interface CartContextValue {
   cart: CartItem[];
-  addToCart: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: CartItem['arte'] | null) => void;
+  addToCart: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string) => void;
   removeFromCart: (idx: number) => void;
 }
 
@@ -16,8 +16,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null) {
-    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined }]);
+  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string) {
+    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined, imagem }]);
     const totalItem = preco * quantidade;
     toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
   }

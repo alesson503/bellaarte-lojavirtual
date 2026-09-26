@@ -1,26 +1,32 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fmt, type Produto as ProdutoType } from '../data';
 import { useProdutos } from '../hooks/useProdutos';
 import { useCart } from '../context/CartContext';
 import { useWhatsapp } from '../context/WhatsappContext';
 import { usePromocao } from '../context/PromocaoContext';
-import { CategoryIcon, WhatsAppIcon } from '../icons';
+import { WhatsAppIcon } from '../icons';
 import { whatsappLink } from '../config';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { CANECA_VARIANTE_POR_NOME } from '../lib/canecaVariantes';
-import { ArteUpload, ehImagem, type Arte } from '../components/ArtePreview';
+import ProductCard from '../components/ProductCard';
 
-// Carregado sob demanda — o Three.js só entra no bundle de quem realmente
-// abre a página de uma caneca com forma 3D cadastrada (a maioria das
-// páginas de produto nunca precisa disso).
-const CanecaViewer3D = lazy(() => import('../components/CanecaViewer3D'));
+// Emoji de apoio quando o produto não tem foto — mesmo mapa do ProductCard.
+function emojiDaCategoria(categoria: string) {
+  const c = categoria.toLowerCase();
+  if (c.includes('caneca')) return '☕';
+  if (c.includes('cart')) return '💌';
+  if (c.includes('banner')) return '🚩';
+  if (c.includes('adesivo')) return '✨';
+  return '🎁';
+}
 
 // Página de verdade pro que era o card de produto expandido. Cobre os três
-// tipos que têm uma "ficha" própria — simples, multi (opções fixas tipo
-// quantidade/cor) e medida (largura×altura livre). `link` (Adesivo UV/Vinil,
-// Cartão de Visita) não passa por aqui — esses vão direto pro configurador.
+// tipos que têm uma "ficha" própria — simples, multi (opções em botão, tipo
+// quantidade/cor/acabamento — inclui Cartão de Visita e Adesivo UV/Vinil,
+// que usam esse mesmo layout) e medida (largura×altura livre). Visual:
+// `produto/[nome]/page.tsx` do protótipo `loja-virtual` (galeria em
+// polaroid, caixa de descrição, "Você também pode gostar").
 export default function Produto() {
   const { id = '' } = useParams();
   const nome = decodeURIComponent(id);
@@ -30,8 +36,7 @@ export default function Produto() {
   const whatsapp = useWhatsapp();
   const { fator, percentual } = usePromocao();
 
-  const encontrado = catalogo.find(p => p.nome === nome && p.tipo !== 'link') ?? null;
-  const produto = encontrado as Exclude<ProdutoType, { tipo: 'link' }> | null;
+  const produto = (catalogo.find(p => p.nome === nome) ?? null) as ProdutoType | null;
 
   const [corSelecionada, setCorSelecionada] = useState<string | null>(null);
   const [quantidade, setQuantidade] = useState(1);
@@ -39,14 +44,6 @@ export default function Produto() {
   const [selMulti, setSelMulti] = useState<Record<string, string>>({});
   const [larg, setLarg] = useState(1);
   const [alt, setAlt] = useState(1);
-  const [arteCaneca, setArteCaneca] = useState<Arte | null>(null);
-  const [corAlcaCaneca, setCorAlcaCaneca] = useState('#DD6F98');
-
-  // Canecas com forma cadastrada viram a visualização 3D (gira, aceita a
-  // foto do cliente) — as demais (Pires, etc.) continuam com a foto plana.
-  const variante3D = produto?.tipo === 'simples' ? CANECA_VARIANTE_POR_NOME[produto.nome] : undefined;
-  const temCorAlca = variante3D === 'colher';
-  const temEfeitoMagico = variante3D === 'magicaColher' || variante3D === 'magicaCoracao';
 
   // Reseta a seleção sempre que o produto (parâmetro da rota) muda.
   useEffect(() => {
@@ -56,26 +53,25 @@ export default function Produto() {
     setSelMulti(produto?.tipo === 'multi' ? Object.fromEntries(produto.dims.map(d => [d.key, d.options[0]])) : {});
     setLarg(1);
     setAlt(1);
-    setArteCaneca(null);
-    setCorAlcaCaneca('#DD6F98');
     window.scrollTo(0, 0);
   }, [nome]);
 
+  const relacionados = useMemo(
+    () => (produto ? catalogo.filter(p => p.categoria === produto.categoria && p.nome !== produto.nome).slice(0, 4) : []),
+    [catalogo, produto],
+  );
+
   if (!produto) {
     return (
-      <>
+      <div className="flex min-h-screen flex-col">
         <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
-        <div className="shell" style={{ padding: '68px 0', textAlign: 'center' }}>
-          <p>Produto não encontrado.</p>
-          <button className="btn-ghost" onClick={() => navigate('/produtos')}>← Voltar pro catálogo</button>
+        <div className="mx-auto max-w-2xl flex-1 px-4 py-16 text-center">
+          <p className="mb-4 text-ink-muted">Produto não encontrado neste catálogo.</p>
+          <button className="font-semibold text-rose" onClick={() => navigate('/produtos')}>← Voltar pro catálogo</button>
         </div>
         <Footer />
-      </>
+      </div>
     );
-  }
-
-  function irParaCategoria() {
-    navigate(`/produtos?categoria=${encodeURIComponent(produto!.categoria)}`);
   }
 
   // ── preço + nome-pro-pedido, um por tipo ──
@@ -90,25 +86,22 @@ export default function Produto() {
     : selMulti;
 
   const m2 = Math.max(0.1, larg) * Math.max(0.1, alt);
+  // Pra produto "multi" vendido por m² (Adesivo UV/Vinil), `preco()` devolve
+  // a taxa por m² — o valor final é essa taxa vezes a área escolhida.
   const precoMultiCheio = produto.tipo === 'multi' ? produto.preco(selMultiAtual) : null;
+  const precoMultiFinal = produto.tipo === 'multi' && precoMultiCheio != null
+    ? (produto.porM2 ? precoMultiCheio * m2 : precoMultiCheio)
+    : null;
   const precoMedidaCheio = produto.tipo === 'medida' ? m2 * produto.precoM2 : null;
 
   const preco =
     produto.tipo === 'simples' ? produto.preco :
-    produto.tipo === 'multi' ? (precoMultiCheio != null ? precoMultiCheio * fator : null) :
+    produto.tipo === 'multi' ? (precoMultiFinal != null ? precoMultiFinal * fator : null) :
     precoMedidaCheio! * fator;
 
-  const corAlcaLabel: Record<string, string> = { '#DD6F98': 'Rosa', '#3B82F6': 'Azul', '#22C55E': 'Verde', '#1a1a1a': 'Preta' };
-
   const nomeParaPedido =
-    produto.tipo === 'simples' ? (
-      produto.cores?.length && corSelecionada
-        ? `${produto.nome} (${corSelecionada})`
-        : temCorAlca
-        ? `${produto.nome} (alça ${corAlcaLabel[corAlcaCaneca] ?? corAlcaCaneca})`
-        : produto.nome
-    ) :
-    produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMultiAtual[d.key]).join(' · ')})` :
+    produto.tipo === 'simples' ? (produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome) :
+    produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMultiAtual[d.key]).join(' · ')}${produto.porM2 ? ` · ${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m` : ''})` :
     `${produto.nome} (${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m = ${m2.toFixed(2).replace('.', ',')}m²)`;
 
   const qtdPedido = produto.tipo === 'simples' ? quantidade : 1;
@@ -119,198 +112,236 @@ export default function Produto() {
 
   function adicionar() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, variante3D && arteCaneca ? { frente: arteCaneca } : undefined);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida);
     navigate('/produtos');
   }
 
   function comprarAgora() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, variante3D && arteCaneca ? { frente: arteCaneca } : undefined);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida);
     navigate('/carrinho', { state: { openCheckout: true } });
   }
 
-  return (
-    <>
-      <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
-      <div className="shell" style={{ paddingTop: 4 }}>
-        <div className="crumbs">
-          <span className="link" onClick={() => navigate('/')}>Início</span> / <span className="link" onClick={irParaCategoria}>{produto.categoria}</span> / <span className="now">{produto.nome}</span>
-        </div>
-        <div className="pd-layout">
-          {variante3D ? (
-            <Suspense fallback={<div className="detail-thumb" data-cat={produto.categoria}><CategoryIcon categoria={produto.categoria} /></div>}>
-              <CanecaViewer3D
-                variante={variante3D}
-                corAlca={corAlcaCaneca}
-                fotoDataUrl={arteCaneca && ehImagem(arteCaneca) ? arteCaneca.dataUrl : null}
-                mostrarEfeito={temEfeitoMagico}
-              />
-            </Suspense>
-          ) : (
-            <div className="detail-thumb" data-cat={produto.categoria}>
-              <span className="cat-tag">{produto.categoria}</span>
-              {produto.tipo === 'simples' && produto.descontoPercentual ? <span className="badge-multi">-{produto.descontoPercentual}%</span> : null}
-              {produto.tipo !== 'simples' && percentual > 0 ? <span className="badge-multi">-{percentual}%</span> : null}
-              {fotoExibida ? (
-                <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="prod-thumb-img" />
-              ) : (
-                <CategoryIcon categoria={produto.categoria} />
-              )}
-            </div>
-          )}
+  const temDesconto = produto.tipo === 'simples' && !!produto.descontoPercentual && (produto.precoOriginal ?? 0) > produto.preco;
 
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-0 pt-8 md:pt-12">
+        <nav className="mb-6 text-sm text-ink-muted">
+          <span className="cursor-pointer hover:text-rose" onClick={() => navigate('/')}>Início</span>{' '}
+          / <span className="cursor-pointer hover:text-rose" onClick={() => navigate('/produtos')}>Produtos</span>{' '}
+          / <span className="text-ink">{produto.nome}</span>
+        </nav>
+
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* galeria em polaroid, com a fita durex por cima */}
           <div>
-            <div className="pd-cat">{produto.categoria}</div>
-            <h1 className="serif" style={{ fontSize: 26, marginBottom: 6 }}>{produto.nome}</h1>
-            {produto.tipo === 'simples' && produto.descricao && (
-              <p className="modal-sub" style={{ marginBottom: produto.especificacoes?.length ? 8 : 16 }}>{produto.descricao}</p>
-            )}
+            <div className="relative -rotate-1 rounded-md bg-white p-3 pb-8 shadow-lg transition hover:rotate-0">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-3.5 left-1/2 z-20 h-9 w-40 -translate-x-1/2 shadow-sm"
+                style={{ rotate: '-4deg', clipPath: 'polygon(0% 15%, 8% 2%, 20% 8%, 50% 3%, 80% 7%, 92% 2%, 100% 12%, 96% 40%, 100% 60%, 95% 85%, 88% 98%, 60% 92%, 30% 98%, 10% 93%, 3% 70%, 0% 45%, 4% 28%)', background: 'linear-gradient(120deg, rgba(227,92,158,0.60), rgba(255,255,255,0.30) 45%, rgba(227,92,158,0.66))' }}
+              />
+              <div className="relative aspect-square overflow-hidden rounded-sm bg-cream-100">
+                {fotoExibida ? (
+                  <img src={fotoExibida} alt={corObj ? `${produto.nome} — ${corObj.nome}` : produto.nome} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-linear-to-br from-rose-50 to-cream-100 text-7xl">
+                    {emojiDaCategoria(produto.categoria)}
+                  </div>
+                )}
+                {temDesconto && (
+                  <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-sm font-bold text-white">-{produto.tipo === 'simples' ? produto.descontoPercentual : 0}%</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* infos */}
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold uppercase tracking-wide text-ink-muted">{produto.categoria}</span>
+            <h1 className="mt-2 font-display text-3xl font-extrabold text-ink md:text-4xl">{produto.nome}</h1>
 
             {produto.tipo === 'simples' && produto.especificacoes?.length ? (
-              <ul className="detail-specs">
+              <ul className="mt-4 space-y-1">
                 {produto.especificacoes.map((e, i) => (
-                  <li key={i}><b>{e.chave}:</b> {e.valor}</li>
+                  <li key={i} className="text-sm text-ink-soft"><span className="mr-1 text-rose">›</span><strong>{e.chave}:</strong> {e.valor}</li>
                 ))}
               </ul>
             ) : null}
 
-            {produto.tipo === 'simples' && produto.cores?.length ? (
-              <div className="field-group">
-                <label>Cor</label>
-                <div className="swatch-row">
-                  {produto.cores.map(cor => (
-                    <button
-                      key={cor.nome}
-                      className={`swatch ${corSelecionada === cor.nome ? 'on' : ''}`}
-                      onClick={() => setCorSelecionada(cor.nome)}
-                    >
-                      {cor.foto && <img src={cor.foto} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} />}
-                      {cor.nome}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {variante3D && (
+            {produto.tipo === 'multi' ? (
               <>
-                <ArteUpload arte={arteCaneca} onArteChange={setArteCaneca} label="Sua foto" nota="Aparece direto na caneca 3D ao lado — arraste pra girar e conferir." />
-                {temCorAlca && (
-                  <div className="field-group">
-                    <label>Cor da alça</label>
-                    <div className="swatch-row">
-                      {Object.entries(corAlcaLabel).map(([hex, nomeCor]) => (
-                        <button key={hex} className={`swatch ${corAlcaCaneca === hex ? 'on' : ''}`} onClick={() => setCorAlcaCaneca(hex)}>
-                          {nomeCor}
+                <p className="mt-3 text-sm text-ink-muted">
+                  a partir de <span className="font-display text-lg font-extrabold text-ink">{fmt((precoMultiCheio ?? 0) * fator)}</span>{produto.porM2 && ' / m²'}
+                </p>
+                <div className="mt-6">
+                  {produto.dims.map(d => (
+                    <div key={d.key} className="mb-5">
+                      <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">{d.label}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {d.options.map(op => (
+                          <button
+                            key={op}
+                            onClick={() => setSelMulti(prev => ({ ...prev, [d.key]: op }))}
+                            className={`rounded-2xl border px-5 py-2.5 font-semibold transition ${selMultiAtual[d.key] === op ? 'border-rose bg-rose-50 text-rose' : 'border-cream-200 bg-white text-ink-soft hover:border-rose-light'}`}
+                          >
+                            {op}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {produto.porM2 && (
+                    <>
+                      <div className="mb-5 grid max-w-xs grid-cols-2 gap-3">
+                        <label className="text-sm font-semibold text-ink-soft">Largura (m)
+                          <input type="number" min={0.1} step={0.1} value={larg} onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                            className="mt-1 w-full rounded-xl border border-cream-200 px-3 py-2 text-ink outline-none focus:border-rose" />
+                        </label>
+                        <label className="text-sm font-semibold text-ink-soft">Altura (m)
+                          <input type="number" min={0.1} step={0.1} value={alt} onChange={e => setAlt(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                            className="mt-1 w-full rounded-xl border border-cream-200 px-3 py-2 text-ink outline-none focus:border-rose" />
+                        </label>
+                      </div>
+                      <p className="mb-5 text-sm text-ink-muted">{larg.toFixed(2).replace('.', ',')} × {alt.toFixed(2).replace('.', ',')} m = {m2.toFixed(2).replace('.', ',')} m²</p>
+                    </>
+                  )}
+
+                  <div className="border-t border-cream-200 pt-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Valor</p>
+                    <p className="font-display text-3xl font-extrabold text-ink">
+                      {percentual > 0 && precoMultiFinal != null && <span className="mr-2 text-lg font-semibold text-faint line-through">{fmt(precoMultiFinal)}</span>}
+                      {preco != null ? fmt(preco) : '—'}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : produto.tipo === 'medida' ? (
+              <>
+                <p className="mt-3 text-sm text-ink-muted">a partir de <span className="font-display text-lg font-extrabold text-ink">{fmt(produto.precoM2 * fator)}</span> / m²</p>
+                <div className="mt-6">
+                  <p className="text-sm text-ink-muted">Preço por m²: <span className="font-semibold text-ink">{fmt(produto.precoM2)}</span></p>
+                  <div className="mt-4 grid max-w-xs grid-cols-2 gap-3">
+                    <label className="text-sm font-semibold text-ink-soft">Largura (m)
+                      <input type="number" min={0.1} step={0.1} value={larg} onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                        className="mt-1 w-full rounded-xl border border-cream-200 px-3 py-2 text-ink outline-none focus:border-rose" />
+                    </label>
+                    <label className="text-sm font-semibold text-ink-soft">Altura (m)
+                      <input type="number" min={0.1} step={0.1} value={alt} onChange={e => setAlt(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                        className="mt-1 w-full rounded-xl border border-cream-200 px-3 py-2 text-ink outline-none focus:border-rose" />
+                    </label>
+                  </div>
+                  <p className="mt-3 text-sm text-ink-muted">{larg.toFixed(2).replace('.', ',')} × {alt.toFixed(2).replace('.', ',')} m = {m2.toFixed(2).replace('.', ',')} m²</p>
+                  <div className="mt-5 border-t border-cream-200 pt-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Valor</p>
+                    <p className="font-display text-3xl font-extrabold text-ink">
+                      {percentual > 0 && <span className="mr-2 text-lg font-semibold text-faint line-through">{fmt(precoMedidaCheio!)}</span>}
+                      {fmt(preco!)}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 flex items-end gap-3">
+                <span className="font-display text-3xl font-extrabold text-ink">{fmt(produto.preco * quantidade)}</span>
+                {temDesconto && <span className="pb-1 text-lg text-ink-muted line-through">{fmt(produto.precoOriginal! * quantidade)}</span>}
+              </div>
+            )}
+
+            <div className="mt-6 rounded-2xl bg-cream-100 p-5 text-ink-soft">
+              {produto.tipo === 'simples' && produto.descricao ? (
+                <p className="whitespace-pre-line">{produto.descricao}</p>
+              ) : (
+                <p className="text-ink-muted">Produto personalizado feito com muito carinho. 💗 Fale com a gente pra combinar as artes, cores e detalhes do seu jeitinho!</p>
+              )}
+            </div>
+
+            {produto.tipo === 'simples' && (
+              <div className="mt-6">
+                {produto.cores?.length ? (
+                  <div className="mb-5">
+                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Cor</p>
+                    <div className="flex flex-wrap gap-2">
+                      {produto.cores.map(cor => (
+                        <button
+                          key={cor.nome}
+                          onClick={() => setCorSelecionada(cor.nome)}
+                          className={`flex items-center gap-2 rounded-2xl border px-5 py-2.5 font-semibold transition ${corSelecionada === cor.nome ? 'border-rose bg-rose-50 text-rose' : 'border-cream-200 bg-white text-ink-soft hover:border-rose-light'}`}
+                        >
+                          {cor.foto && <img src={cor.foto} alt="" className="h-4 w-4 rounded-full object-cover" />}
+                          {cor.nome}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
-              </>
-            )}
+                ) : null}
 
-            {produto.tipo === 'simples' && (
-              <div className="field-group">
-                <label>Quantidade</label>
-                <div className="qty-stepper">
-                  <button type="button" onClick={() => setQuantidade(q => Math.max(1, q - 1))}>−</button>
-                  <span>{quantidade}</span>
-                  <button type="button" onClick={() => setQuantidade(q => q + 1)}>+</button>
-                </div>
-              </div>
-            )}
-
-            {produto.tipo === 'multi' && produto.dims.map(d => (
-              <div className="field-group" key={d.key}>
-                <label>{d.label}</label>
-                <div className="swatch-row">
-                  {d.options.map(op => (
-                    <button
-                      key={op}
-                      className={`swatch ${selMultiAtual[d.key] === op ? 'on' : ''}`}
-                      onClick={() => setSelMulti(prev => ({ ...prev, [d.key]: op }))}
-                    >
-                      {op}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {produto.tipo === 'medida' && (
-              <div style={{ display: 'flex', gap: 12 }}>
-                <div className="field-group" style={{ flex: 1 }}>
-                  <label>Largura (m)</label>
-                  <input
-                    type="number" min={0.1} step={0.1} value={larg}
-                    onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-                  />
-                </div>
-                <div className="field-group" style={{ flex: 1 }}>
-                  <label>Altura (m)</label>
-                  <input
-                    type="number" min={0.1} step={0.1} value={alt}
-                    onChange={e => setAlt(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-                  />
-                </div>
-              </div>
-            )}
-            {produto.tipo === 'medida' && (
-              <div style={{ fontSize: 11.5, color: 'var(--graphite-faint)', margin: '-8px 0 16px' }}>
-                {m2.toFixed(2).replace('.', ',')} m² · {fmt(produto.precoM2)}/m²
-              </div>
-            )}
-
-            {produto.tipo === 'simples' && (
-              <div className="field-group">
-                <label>Observação (opcional)</label>
-                <textarea
-                  rows={2} value={observacao} onChange={e => setObservacao(e.target.value)}
-                  placeholder="Ex.: essa unidade é com a foto da Maria — se pedir mais de uma arte diferente, adicione cada uma separada com sua observação"
-                />
-              </div>
-            )}
-
-            <div className="price-row" style={{ marginTop: 4 }}>
-              <div>
-                {produto.tipo === 'simples' && quantidade > 1 && <div className="from">{fmt(produto.preco)} cada</div>}
-                {preco == null ? (
-                  <div className="p" style={{ fontSize: 24 }}>combinação indisponível</div>
-                ) : (
-                  <div className="p" style={{ fontSize: 24 }}>
-                    {produto.tipo === 'simples' && produto.precoOriginal != null && produto.precoOriginal > produto.preco && (
-                      <span className="old-price">{fmt(produto.precoOriginal * quantidade)}</span>
-                    )}
-                    {produto.tipo === 'multi' && percentual > 0 && precoMultiCheio != null && (
-                      <span className="old-price">{fmt(precoMultiCheio)}</span>
-                    )}
-                    {produto.tipo === 'medida' && percentual > 0 && (
-                      <span className="old-price">{fmt(precoMedidaCheio!)}</span>
-                    )}
-                    {fmt(preco * qtdPedido)}
+                <div className="mb-5">
+                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Quantidade</p>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setQuantidade(q => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center rounded-full bg-cream-200 font-bold text-ink">−</button>
+                    <span className="w-6 text-center font-semibold">{quantidade}</span>
+                    <button type="button" onClick={() => setQuantidade(q => q + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-cream-200 font-bold text-ink">+</button>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="modal-actions">
-              <button className="add-btn btn-flex" disabled={!podeAdicionar} onClick={adicionar}>Adicionar ao pedido</button>
-              <button className="buy-now-btn btn-flex" disabled={!podeAdicionar} onClick={comprarAgora}>⚡ Comprar agora</button>
-            </div>
-            <div className="modal-actions" style={{ marginTop: 10 }}>
+                <label className="mb-5 block">
+                  <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-ink-muted">Observação (opcional)</span>
+                  <textarea
+                    rows={2} value={observacao} onChange={e => setObservacao(e.target.value)}
+                    placeholder="Ex.: essa unidade é com a foto da Maria — se pedir mais de uma arte diferente, adicione cada uma separada com sua observação"
+                    className="w-full rounded-2xl border border-cream-200 px-4 py-3 text-sm outline-none focus:border-rose"
+                  />
+                </label>
+              </div>
+            )}
+
+            <div className="mt-2 space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  onClick={adicionar} disabled={!podeAdicionar}
+                  className="rounded-2xl bg-ink px-6 py-3.5 font-bold text-cream-50 transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Adicionar ao pedido
+                </button>
+                <button
+                  onClick={comprarAgora} disabled={!podeAdicionar}
+                  style={{ background: 'var(--amber)' }}
+                  className="rounded-2xl px-6 py-3.5 font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  ⚡ Comprar agora
+                </button>
+              </div>
               <a
-                className="btn-outline-full btn-flex" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
-                href={whatsappLink(whatsapp, mensagemWhats)}
-                target="_blank" rel="noopener noreferrer"
+                href={whatsappLink(whatsapp, mensagemWhats)} target="_blank" rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose px-6 py-3.5 font-bold text-rose transition hover:bg-rose-50"
               >
                 <WhatsAppIcon /> Comprar pelo WhatsApp
               </a>
             </div>
           </div>
         </div>
+
+        {relacionados.length > 0 && (
+          <section className="mt-16">
+            <h2 className="mb-6 font-display text-2xl font-extrabold text-ink">Você também pode gostar</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
+              {relacionados.map((p, i) => (
+                <ProductCard
+                  key={('id' in p ? p.id : p.nome) + i}
+                  produto={p}
+                  index={i}
+                  onOpenDetalhe={p2 => navigate(`/produto/${encodeURIComponent(p2.nome)}`)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
       <Footer />
-    </>
+    </div>
   );
 }

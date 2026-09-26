@@ -6,4 +6,5 @@ export interface CartItem {
   quantidade: number;
   observacao?: string;
   arte?: { frente?: ArteAnexo; verso?: ArteAnexo };
+  imagem?: string;
 }

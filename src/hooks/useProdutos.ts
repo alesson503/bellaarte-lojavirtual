@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LINKS, MULTI, MEDIDA, SIMPLES, type Produto, type Categoria } from '../data';
+import { MULTI, MEDIDA, SIMPLES, type Produto, type Categoria } from '../data';
 import { listLojaProducts, listCatalogoFixoImagens } from '../services/productsService';
 
 // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
@@ -37,7 +37,6 @@ export function useProdutos() {
   }, []);
 
   const catalogo: Produto[] = useMemo(() => [
-    ...LINKS,
     ...MULTI.map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
     ...MEDIDA.map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
     ...simples,

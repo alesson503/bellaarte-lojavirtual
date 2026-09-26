@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProdutos } from '../hooks/useProdutos';
-import { SearchIcon } from '../icons';
 import ProductCard from '../components/ProductCard';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 // Página de verdade pra vitrine (era a seção "produtos" dentro de
 // StoreApp/Catalogo). Filtro de categoria vem da URL (?categoria=...) pra
-// o card de categoria da Home poder linkar direto pra cá.
+// o card de categoria da Home poder linkar direto pra cá. Visual: sidebar +
+// grid do protótipo `loja-virtual` (catalogo.tsx).
 export default function Vitrine() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,53 +36,64 @@ export default function Vitrine() {
     setSearchParams(next);
   }
 
-  function onGoPersonalize(scrollToId: 'adesivos' | 'cartoes') {
-    navigate('/', { state: { scrollTo: scrollToId } });
-  }
-
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header page={null} onGoPage={(_next, scrollToId) => navigate('/', { state: scrollToId ? { scrollTo: scrollToId } : undefined })} onOpenCart={() => navigate('/carrinho')} />
-      <section id="catalogo" className="band">
-        <div className="shell">
-          <div className="crumbs"><span className="link" onClick={() => navigate('/')}>Início</span> / <span className="now">Produtos</span></div>
-          <div className="cat-layout">
-            <div>
-              <input className="side-search" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
-              <div className="side-title">Categoria</div>
-              <div className="side-list">
+      <div className="mx-auto w-full max-w-[1720px] flex-1 px-4 pb-0 pt-8 md:px-8">
+        <div className="mb-3 text-xs text-faint">
+          <span className="cursor-pointer" onClick={() => navigate('/')}>Início</span> / Produtos
+        </div>
+
+        <div className="flex flex-col items-start gap-8 lg:flex-row">
+          <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-60 lg:self-start">
+            <div className="rounded-2xl border border-cream-200 bg-white p-4 shadow-sm">
+              <input
+                type="text"
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+                placeholder="Buscar produto..."
+                className="w-full rounded-2xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-muted focus:border-rose"
+              />
+              <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-widest text-ink-muted">Categoria</p>
+              <ul className="space-y-1">
                 {categorias.map(cat => (
-                  <button key={cat} className={filtro === cat ? 'on' : ''} onClick={() => setFiltro(cat)}>{cat}</button>
+                  <li key={cat}>
+                    <button
+                      onClick={() => setFiltro(cat)}
+                      className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition ${filtro === cat ? 'bg-rose text-white shadow-sm' : 'text-ink-soft hover:bg-rose-50 hover:text-rose'}`}
+                    >
+                      {cat}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
+
+          <div className="flex-1">
+            <div className="mb-8 flex items-end justify-between gap-4">
+              <h1 className="font-display text-3xl font-extrabold text-ink">{filtro === 'Todos' ? 'Todos os produtos' : filtro}</h1>
+              <span className="shrink-0 text-sm text-ink-muted">{filtrados.length} produto{filtrados.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            {filtrados.length ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+                {filtrados.map((p, i) => (
+                  <ProductCard
+                    key={('id' in p ? p.id : p.nome) + i}
+                    produto={p}
+                    index={i}
+                    onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
+                  />
                 ))}
               </div>
-            </div>
-            <div>
-              <div className="section-title-row">
-                <h2 className="serif">Todos os produtos</h2>
-                <span className="result-count">{filtrados.length} produto{filtrados.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="gallery cat-layout-grid">
-                {filtrados.length ? (
-                  filtrados.map((p, i) => (
-                    <ProductCard
-                      key={('id' in p ? p.id : p.nome) + i}
-                      produto={p}
-                      onGoPersonalize={onGoPersonalize}
-                      onOpenDetalhe={produto => navigate(`/produto/${encodeURIComponent(produto.nome)}`)}
-                    />
-                  ))
-                ) : (
-                  <div className="empty">
-                    <SearchIcon />
-                    Nenhum produto encontrado com esse filtro.
-                  </div>
-                )}
-              </div>
-            </div>
+            ) : (
+              <p className="mt-16 text-center text-ink-muted">Nenhum produto encontrado. 🌸</p>
+            )}
           </div>
         </div>
-      </section>
+      </div>
       <Footer />
-    </>
+    </div>
   );
 }

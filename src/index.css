@@ -1,19 +1,49 @@
 @import "tailwindcss";
 
+/* Aliases pros tokens Tailwind do redesign (bg-rose, text-ink, font-display...)
+   apontarem pras MESMAS variáveis CSS que o resto do site já usa (definidas em
+   App.css) — assim a cor customizável no admin (/admin/configuracoes) e o modo
+   escuro continuam funcionando nos componentes reescritos com classes Tailwind. */
+@theme inline {
+  --color-cream-50: var(--paper);
+  --color-cream-100: var(--blush);
+  --color-cream-200: var(--line);
+
+  --color-rose: var(--violet);
+  --color-rose-light: var(--blush-line);
+  --color-rose-50: var(--violet-soft);
+  --color-rose-deep: var(--violet-deep);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--graphite);
+  --color-faint: var(--graphite-faint);
+
+  --color-gold: var(--gold);
+
+  --font-display: var(--font-sora);
+  --font-sans: var(--font-manrope);
+  --font-hand: var(--font-caveat);
+}
+
 :root {
-  /* Redesign 2026-08 — paleta bege/rosa aprovada em prévia (mockup de gráfica
-     que o dono trouxe como referência). Nomes de variável antigos (violet/blush)
+  /* Redesign 2026-09 — paleta rosa/creme/marrom do protótipo `loja-virtual`
+     (Sora + Manrope + Caveat). Nomes de variável antigos (violet/blush)
      mantidos de propósito — usados em todo o CSS, trocar só o valor evita
      reescrever cada componente. */
-  --ink: #241F1B; --ink-soft: #4A4038; --graphite: #8C8074; --graphite-faint: #B4A996;
-  --paper: #FCEEF2; --card: #FFFFFF; --line: #F5D6E2;
-  --violet: #DD6F98; --violet-deep: #B8496F; --violet-ink: #FFFFFF; --violet-soft: color-mix(in srgb, var(--violet) 12%, white);
-  --blush: #FBE4ED; --blush-line: #F5D6E2; --blush-deep: #A83D63;
-  --amber: #B45309; --amber-bg: #FEF3C7;
+  --ink: #241F1B; --ink-soft: #3A3225; --graphite: #7A6E5E; --graphite-faint: #A89987;
+  --paper: #FDF1F6; --card: #FFFFFF; --line: #F5D6E2;
+  --violet: #E35C9E; --violet-deep: #B8496F; --violet-ink: #FFFFFF; --violet-soft: #FCEEF2;
+  --blush: #F8E7EF; --blush-line: #F5D6E2; --blush-deep: #A83D63;
+  --amber: #B45309; --amber-bg: #FEF3C7; --gold: #FCD34D;
   --corte: oklch(52% 0.15 40); --corte-bg: oklch(94% 0.03 40);
   --seguranca: oklch(52% 0.1 165); --seguranca-bg: oklch(94% 0.03 165);
   --shadow: 0 1px 2px rgba(36,31,27,0.05), 0 10px 26px -14px rgba(36,31,27,0.22);
   --shadow-lift: 0 22px 46px -20px rgba(36,31,27,0.34);
+
+  --font-sora: "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-manrope: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-caveat: "Caveat", cursive;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,12 +74,13 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  margin: 0; background: var(--paper); color: var(--ink);
-  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0; background-color: var(--paper); color: var(--ink);
+  background-image: url("/fundo.png"); background-size: cover; background-position: center; background-attachment: fixed;
+  font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
 }
 .font-serif-display, .serif {
-  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sora);
   font-weight: 800;
 }
 .font-mono-data, .mono {

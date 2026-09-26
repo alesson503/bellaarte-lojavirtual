@@ -11,11 +11,8 @@ import { usePromocao } from '../context/PromocaoContext';
 import type { Page } from '../StoreApp';
 
 // Extraído de StoreApp.tsx. "Produtos" e o carrinho já são rotas de verdade
-// (/produtos, /carrinho); "Início" volta pra Home. O menu principal é fixo
-// (Início/Produtos/Contato) — chegou a ser por categoria dinâmica, mas com
-// o catálogo puxando categoria direto do ERP (nomes variados, alguns só
-// fazem sentido lá dentro) isso virou uma lista longa e confusa aqui em
-// cima; escolher categoria já é papel da barra lateral em /produtos.
+// (/produtos, /carrinho); "Início" volta pra Home. Visual: protótipo
+// `loja-virtual` (barra ink em cima, busca central arredondada, nav abaixo).
 export default function Header({
   page,
   onGoPage,
@@ -45,11 +42,6 @@ export default function Header({
     navigate('/produtos');
     setMobileNavOpen(false);
   }
-  function irParaPersonalizar() {
-    onGoPage('personalize');
-    navigate('/');
-    setMobileNavOpen(false);
-  }
   function irParaSobre() {
     navigate('/', { state: { page: 'sobre' } });
     setMobileNavOpen(false);
@@ -65,69 +57,101 @@ export default function Header({
     setMobileNavOpen(false);
   }
 
+  const linkCls = (ativo: boolean) =>
+    `font-semibold hover:text-rose ${ativo ? 'text-rose' : 'text-ink-soft'}`;
+
   return (
     <>
-      <div className="info-bar">
-        <span>🚚 Frete combinado direto com você pelo WhatsApp</span>
-        <span>✂️ Arte revisada antes de imprimir</span>
-        <span>💬 Atendimento rápido</span>
+      <div className="bg-ink px-4 py-1.5 text-center text-xs text-white">
+        🚚 Frete combinado direto com você pelo WhatsApp &middot; ✂️ Arte revisada antes de imprimir &middot; 💬 Atendimento rápido
       </div>
       {promocao && (
-        <div className="promo-banner">
-          🎉 <b>{promocao.nome}</b> — {promocao.percentual}% OFF em toda a loja
+        <div className="bg-rose px-4 py-2 text-center text-xs font-bold text-white">
+          🎉 {promocao.nome} — {promocao.percentual}% OFF em toda a loja
         </div>
       )}
-      <header className="site">
-        <div className="shell nav">
-          <Link className="brand" to="/" onClick={() => onGoPage('inicio')}>
-            <Logo size={40} />
-            <span className="word">
-              Bella <span>Arte</span>
-              <small style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--graphite-faint)' }}>
+      <header className="sticky top-0 z-20 border-b border-cream-200 bg-cream-50/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4 md:gap-8">
+          <Link to="/" onClick={irParaInicio} className="flex shrink-0 items-center gap-2 text-ink">
+            <Logo size={44} />
+            <span className="hidden leading-tight sm:block">
+              <span className="block font-display text-lg font-extrabold tracking-tight">
+                Bella <span className="text-rose">Arte</span>
+              </span>
+              <span className="block text-[9px] font-semibold uppercase tracking-widest text-faint">
                 Gráfica &amp; Personalizados
-              </small>
+              </span>
             </span>
           </Link>
-          <form className="search-box header-search" onSubmit={buscar}>
-            <SearchIcon />
-            <input type="text" placeholder="Buscar canecas, adesivos, cartões e mais..." value={busca} onChange={e => setBusca(e.target.value)} />
+
+          <form onSubmit={buscar} className="hidden flex-1 items-center gap-2 rounded-lg border border-cream-200 bg-cream-100 px-4 py-2 md:flex">
+            <input
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar canecas, adesivos, cartões e mais..."
+              className="flex-1 bg-transparent text-sm outline-none"
+            />
+            <button type="submit" className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-rose text-white">
+              <SearchIcon />
+            </button>
           </form>
-          <div className="nav-right">
-            <button className="hamburger-btn" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>{mobileNavOpen ? '✕' : '☰'}</button>
-            <button className="cart-pill" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
-            <button className="cart-pill" title="Carrinho" onClick={onOpenCart}>🛍️ <b>{cart.length}</b></button>
+
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button className="grid h-9 w-9 place-items-center rounded-full border border-cream-200 bg-white text-ink md:hidden" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>
+              {mobileNavOpen ? '✕' : '☰'}
+            </button>
+            <button className="grid h-9 w-9 place-items-center rounded-full border border-cream-200 bg-white text-ink" title="Enviar minha arte" onClick={() => setUploadOpen(true)}>📎</button>
+            <button className="relative grid h-9 w-9 place-items-center rounded-full bg-ink text-white" title="Carrinho" onClick={onOpenCart}>
+              🛍️
+              {cart.length > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-rose text-[10px] font-bold">{cart.length}</span>
+              )}
+            </button>
             {user?.role === 'admin' && (
-              <Link className="cart-pill" to="/admin" title="Voltar pro painel administrativo">⚙️ Painel admin</Link>
+              <Link className="hidden rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" to="/admin" title="Voltar pro painel administrativo">⚙️ Admin</Link>
             )}
             {user ? (
-              <button className="cart-pill" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
+              <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
                 <UserIcon /> {user.nome.split(' ')[0]}
               </button>
             ) : (
-              <button className="cart-pill" title="Entrar / criar conta" onClick={() => setLoginOpen(true)}>
+              <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title="Entrar / criar conta" onClick={() => setLoginOpen(true)}>
                 <UserIcon /> Entrar
               </button>
             )}
           </div>
         </div>
-        <nav className="cat-nav-row">
-          <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
-          <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
-          <a className={page === 'personalize' ? 'active' : ''} onClick={irParaPersonalizar}>Personalizar</a>
-          <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
-          <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
+
+        <nav className="mx-auto hidden max-w-6xl gap-7 px-4 pb-3 text-sm md:flex">
+          <a className={linkCls(page === 'inicio')} onClick={irParaInicio}>Início</a>
+          <a className={linkCls(location.pathname === '/produtos')} onClick={irParaProdutos}>Produtos</a>
+          <a className={linkCls(page === 'sobre')} onClick={irParaSobre}>Sobre Nós</a>
+          <a className={linkCls(page === 'contato')} onClick={irParaContato}>Contato</a>
         </nav>
-        <nav className={`mobile-nav shell ${mobileNavOpen ? 'open' : ''}`}>
-          <form className="search-box header-search-mobile" onSubmit={buscar}>
-            <SearchIcon />
-            <input type="text" placeholder="Buscar produto..." value={busca} onChange={e => setBusca(e.target.value)} />
-          </form>
-          <a className={page === 'inicio' ? 'active' : ''} onClick={irParaInicio}>Início</a>
-          <a className={location.pathname === '/produtos' ? 'active' : ''} onClick={irParaProdutos}>Produtos</a>
-          <a className={page === 'personalize' ? 'active' : ''} onClick={irParaPersonalizar}>Personalizar</a>
-          <a className={page === 'sobre' ? 'active' : ''} onClick={irParaSobre}>Sobre Nós</a>
-          <a className={page === 'contato' ? 'active' : ''} onClick={irParaContato}>Contato</a>
-        </nav>
+
+        {mobileNavOpen && (
+          <nav className="flex flex-col gap-1 border-t border-cream-200 bg-cream-50 px-4 py-3 md:hidden">
+            <form onSubmit={buscar} className="mb-2 flex items-center gap-2 rounded-lg border border-cream-200 bg-cream-100 px-4 py-2">
+              <input
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+                placeholder="Buscar produto..."
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
+              <SearchIcon />
+            </form>
+            <a className={`py-2.5 ${linkCls(page === 'inicio')}`} onClick={irParaInicio}>Início</a>
+            <a className={`py-2.5 ${linkCls(location.pathname === '/produtos')}`} onClick={irParaProdutos}>Produtos</a>
+            <a className={`py-2.5 ${linkCls(page === 'sobre')}`} onClick={irParaSobre}>Sobre Nós</a>
+            <a className={`py-2.5 ${linkCls(page === 'contato')}`} onClick={irParaContato}>Contato</a>
+            {user?.role === 'admin' && <Link className="py-2.5 font-semibold text-ink-soft" to="/admin">⚙️ Painel admin</Link>}
+            {user ? (
+              <a className="py-2.5 font-semibold text-ink-soft" onClick={() => { logout(); toast('Você saiu da sua conta.'); setMobileNavOpen(false); }}>Sair da conta</a>
+            ) : (
+              <a className="py-2.5 font-semibold text-ink-soft" onClick={() => { setLoginOpen(true); setMobileNavOpen(false); }}>Entrar / criar conta</a>
+            )}
+          </nav>
+        )}
       </header>
       <UploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSuccess={nome => { setLoginOpen(false); toast(`✓ Bem-vindo(a), ${nome.split(' ')[0]}!`); }} />

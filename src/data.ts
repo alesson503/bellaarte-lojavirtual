@@ -1,19 +1,9 @@
 // Catálogo real da Bella Arte, extraído da tela de Produtos do sistema em
 // 2026-08-16 (sem acesso ao banco — puxado de prints que o dono mandou).
-// Produtos com várias variações viram um "grupo" (MULTI) ou um "link" pra um
-// configurador dedicado, em vez de uma lista enorme de cards repetidos.
+// Produtos com várias variações viram um "grupo" (MULTI) — mesma ficha de
+// produto pra tudo (foto + botões de opção), sem tela especial nenhuma.
 
 export type Categoria = 'Adesivo' | 'Banner' | 'Caneca' | 'Cartão de Visita' | 'Outros';
-
-export interface LinkProduct {
-  tipo: 'link';
-  id: string;
-  nome: string;
-  categoria: Categoria;
-  desde: number;
-  unidade?: string;
-  target: 'adesivos' | 'cartoes';
-}
 
 export interface MultiDim {
   key: string;
@@ -28,6 +18,10 @@ export interface MultiProduct {
   categoria: Categoria;
   unidade?: string;
   dims: MultiDim[];
+  // Quando true, `preco()` devolve o valor por m² (não o preço final) — a
+  // ficha do produto mostra largura×altura e multiplica pela área, igual o
+  // Adesivo já fazia no configurador antigo.
+  porM2?: boolean;
   preco: (v: Record<string, string>) => number | null;
   imagem?: string;
 }
@@ -55,20 +49,11 @@ export interface SimpleProduct {
   especificacoes?: { chave: string; valor: string }[];
 }
 
-export type Produto = LinkProduct | MultiProduct | MedidaProduct | SimpleProduct;
+export type Produto = MultiProduct | MedidaProduct | SimpleProduct;
 
-// Produtos que já têm um configurador dedicado (seção "Monte o seu") — no
-// catálogo viram um card simples com "a partir de" + botão que leva até o
-// configurador, em vez de duplicar a lógica de preço em outro lugar.
-export const LINKS: LinkProduct[] = [
-  { tipo: 'link', id: 'cartao', nome: 'Cartão de Visita', categoria: 'Cartão de Visita', desde: 80, target: 'cartoes' },
-  { tipo: 'link', id: 'adesivo-uv', nome: 'Adesivo UV', categoria: 'Adesivo', unidade: 'm²', desde: 200, target: 'adesivos' },
-  { tipo: 'link', id: 'adesivo-vinil', nome: 'Adesivo Vinil', categoria: 'Adesivo', unidade: 'm²', desde: 180, target: 'adesivos' },
-];
-
-// Produtos com 2 campos separados (ex: Tamanho + Blackout) — cada campo é um
-// seletor próprio em vez de um dropdown combinando tudo. Preço vem de uma
-// tabela real do sistema, não de uma fórmula inventada.
+// Produtos com 2 (ou mais) campos separados (ex: Tamanho + Blackout) — cada
+// campo é um seletor próprio em vez de um dropdown combinando tudo. Preço
+// vem de uma tabela real do sistema, não de uma fórmula inventada.
 export const MULTI: MultiProduct[] = [
   {
     tipo: 'multi', id: 'windbanner', nome: 'Wind Banner', categoria: 'Banner',
@@ -82,6 +67,33 @@ export const MULTI: MultiProduct[] = [
       };
       return t[v.tam][v.bk];
     },
+  },
+  {
+    tipo: 'multi', id: 'cartao', nome: 'Cartão de Visita', categoria: 'Cartão de Visita', unidade: 'un',
+    dims: [
+      { key: 'qtd', label: 'Quantidade', options: ['100', '250', '500', '1.000'] },
+      { key: 'imp', label: 'Impressão', options: ['4x0', '4x1', '4x4'] },
+      { key: 'verniz', label: 'Verniz (só em 1.000un)', options: ['Sem', 'Com'] },
+    ],
+    preco(v) {
+      const qtd = Number(v.qtd.replace('.', ''));
+      const tabela = CARTAO_PRECOS[qtd];
+      if (!tabela) return null;
+      // "Com verniz" só existe pra 1.000un — nas outras quantidades essa
+      // combinação não existe no sistema (não cai pro preço sem verniz).
+      if (v.verniz === 'Com') return qtd === 1000 ? (tabela.comVerniz?.[v.imp] ?? null) : null;
+      return tabela.semVerniz[v.imp] ?? null;
+    },
+  },
+  {
+    tipo: 'multi', id: 'adesivo-uv', nome: 'Adesivo UV', categoria: 'Adesivo', unidade: 'm²', porM2: true,
+    dims: [{ key: 'acab', label: 'Acabamento', options: ['Recortado', 'Refilado', 'Laminado'] }],
+    preco: v => ADESIVO_PRECOS.UV[v.acab] ?? null,
+  },
+  {
+    tipo: 'multi', id: 'adesivo-vinil', nome: 'Adesivo Vinil', categoria: 'Adesivo', unidade: 'm²', porM2: true,
+    dims: [{ key: 'acab', label: 'Acabamento', options: ['Recortado', 'Refilado', 'Laminado'] }],
+    preco: v => ADESIVO_PRECOS.Vinil[v.acab] ?? null,
   },
   {
     tipo: 'multi', id: 'placaps', nome: 'Placa PS', categoria: 'Outros', unidade: 'm²',
@@ -142,7 +154,7 @@ export const SIMPLES: SimpleProduct[] = [
   { tipo: 'simples', nome: 'Sulfite — Impressão P&B', categoria: 'Outros', preco: 1 },
 ];
 
-export const CATALOGO: Produto[] = [...LINKS, ...MULTI, ...MEDIDA, ...SIMPLES];
+export const CATALOGO: Produto[] = [...MULTI, ...MEDIDA, ...SIMPLES];
 
 export const CATEGORIAS: string[] = [
   'Todos',
