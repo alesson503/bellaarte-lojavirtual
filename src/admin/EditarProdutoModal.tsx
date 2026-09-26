@@ -37,7 +37,7 @@ export default function EditarProdutoModal({
     setErro('');
   }, [produto]);
 
-  const open = produto != null;
+  if (!produto) return null;
 
   function addCor() {
     setCores(prev => [...prev, { nome: '', foto: null }]);
@@ -129,110 +129,128 @@ export default function EditarProdutoModal({
   }
 
   return (
-    <div className={`modal-overlay ${open ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      {produto && (
-        <div className="modal-box">
-          <button className="modal-close" onClick={onClose}>✕</button>
-          <h2 className="serif">{produto.nome}</h2>
-          <p className="modal-sub">
-            {produto.categoria} · {fmt(produto.preco_original)}{produto.unidade && ` /${produto.unidade}`}
-            {produto.origem === 'erp' && ' · nome, categoria e preço vêm do seu sistema (edite lá)'}
-          </p>
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-ink/45 p-5 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="max-h-[88vh] w-full max-w-xl overflow-auto rounded-3xl bg-white p-7">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl font-bold text-ink">{produto.nome}</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              {produto.categoria} · {fmt(produto.preco_original)}{produto.unidade && ` /${produto.unidade}`}
+              {produto.origem === 'erp' && ' · nome, categoria e preço vêm do seu sistema (edite lá)'}
+            </p>
+          </div>
+          <button className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-cream-100 hover:text-ink" onClick={onClose}>✕</button>
+        </div>
 
-          <div className="field-group">
-            <label>Foto</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {imagemUrl ? (
-                <img src={imagemUrl} alt={produto.nome} style={{ width: 68, height: 68, borderRadius: 10, objectFit: 'cover' }} />
+        <div className="mb-5 rounded-2xl border border-cream-200 p-4">
+          <p className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-muted">Foto</p>
+          <div className="flex items-center gap-4">
+            {imagemUrl ? (
+              <img src={imagemUrl} alt={produto.nome} className="h-17 w-17 rounded-xl object-cover" />
+            ) : (
+              <div className="h-17 w-17 rounded-xl border border-dashed border-cream-200 bg-cream-50" />
+            )}
+            <div className="flex gap-3">
+              {enviandoFoto ? (
+                <span className="text-sm text-ink-muted">Enviando…</span>
               ) : (
-                <div style={{ width: 68, height: 68, borderRadius: 10, background: 'var(--paper)', border: '1px dashed var(--line)' }} />
+                <>
+                  <button className="font-semibold text-rose hover:underline" onClick={() => fileInputRef.current?.click()}>
+                    {imagemUrl ? 'Trocar foto' : 'Subir foto'}
+                  </button>
+                  {imagemUrl && (
+                    <button className="font-semibold text-ink-muted hover:text-rose hover:underline" onClick={tirarFoto}>
+                      Remover foto
+                    </button>
+                  )}
+                </>
               )}
-              <div style={{ display: 'flex', gap: 10 }}>
-                {enviandoFoto ? (
-                  <span style={{ fontSize: 12.5, color: 'var(--graphite-faint)' }}>Enviando…</span>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+              onChange={e => onArquivoEscolhido(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-cream-200 p-4">
+          <p className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-muted">Informações</p>
+          <label className="mb-3 block">
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">Desconto (%)</span>
+            <input
+              value={descontoValor} onChange={e => setDescontoValor(e.target.value)}
+              placeholder="Ex.: 10 — deixe em branco pra não ter desconto"
+              className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm outline-none focus:border-rose"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">Descrição</span>
+            <textarea
+              rows={3} value={descricaoValor} onChange={e => setDescricaoValor(e.target.value)}
+              placeholder="O que o cliente vê na página do produto"
+              className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm outline-none focus:border-rose"
+            />
+          </label>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-cream-200 p-4">
+          <p className="mb-1 text-sm font-bold uppercase tracking-wide text-ink-muted">Cores disponíveis</p>
+          <p className="mb-3 text-sm text-ink-muted">Cada cor pode ter sua própria foto — se não subir uma, o cliente vê a foto principal do produto.</p>
+          <div className="flex flex-col gap-2">
+            {cores.map((c, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {c.foto ? (
+                  <img src={c.foto} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-9 w-9 shrink-0 rounded-lg border border-dashed border-cream-200 bg-cream-50" />
+                )}
+                <input
+                  value={c.nome} onChange={e => renomearCor(i, e.target.value)} placeholder="Nome da cor"
+                  className="h-9 flex-1 rounded-lg border border-cream-200 px-2.5 text-sm outline-none focus:border-rose"
+                />
+                {enviandoFotoCor === i ? (
+                  <span className="text-xs text-ink-muted">...</span>
                 ) : (
                   <>
-                    <button className="adm-link-btn" style={{ margin: 0 }} onClick={() => fileInputRef.current?.click()}>
-                      {imagemUrl ? 'Trocar foto' : 'Subir foto'}
+                    <button className="whitespace-nowrap text-sm font-semibold text-rose hover:underline" onClick={() => pedirFotoCor(i)}>
+                      {c.foto ? 'Trocar foto' : 'Foto'}
                     </button>
-                    {imagemUrl && (
-                      <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={tirarFoto}>
+                    {c.foto && (
+                      <button className="whitespace-nowrap text-sm font-semibold text-ink-muted hover:text-rose hover:underline" onClick={() => removerFotoCor(i)}>
                         Remover foto
                       </button>
                     )}
                   </>
                 )}
+                <button className="text-ink-muted hover:text-rose" onClick={() => removerCor(i)}>✕</button>
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onChange={e => onArquivoEscolhido(e.target.files?.[0] ?? null)} />
-            </div>
+            ))}
           </div>
-
-          <div className="field-group">
-            <label>Desconto (%)</label>
-            <input value={descontoValor} onChange={e => setDescontoValor(e.target.value)} placeholder="Ex.: 10 — deixe em branco pra não ter desconto" />
-          </div>
-
-          <div className="field-group">
-            <label>Descrição</label>
-            <textarea rows={3} value={descricaoValor} onChange={e => setDescricaoValor(e.target.value)}
-              placeholder="O que o cliente vê no modal de detalhes do produto" />
-          </div>
-
-          <div className="field-group">
-            <label>Cores disponíveis</label>
-            <p className="sub" style={{ margin: '0 0 10px' }}>
-              Cada cor pode ter sua própria foto — se não subir uma, o cliente vê a foto principal do produto.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {cores.map((c, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {c.foto ? (
-                    <img src={c.foto} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)', flexShrink: 0 }} />
-                  )}
-                  <input value={c.nome} onChange={e => renomearCor(i, e.target.value)} placeholder="Nome da cor"
-                    style={{ flex: 1, height: 36, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 10px', fontSize: 12.5 }} />
-                  {enviandoFotoCor === i ? (
-                    <span style={{ fontSize: 12, color: 'var(--graphite-faint)' }}>...</span>
-                  ) : (
-                    <>
-                      <button className="adm-link-btn" style={{ margin: 0, whiteSpace: 'nowrap' }} onClick={() => pedirFotoCor(i)}>
-                        {c.foto ? 'Trocar foto' : 'Foto'}
-                      </button>
-                      {c.foto && (
-                        <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)', whiteSpace: 'nowrap' }} onClick={() => removerFotoCor(i)}>
-                          Remover foto
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={() => removerCor(i)}>✕</button>
-                </div>
-              ))}
-            </div>
-            <button className="adm-link-btn" style={{ marginTop: cores.length ? 10 : 0 }} onClick={addCor}>+ Adicionar cor</button>
-            <input ref={corFileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={e => onFotoCorEscolhida(e.target.files?.[0] ?? null)} />
-          </div>
-
-          <div className="field-group">
-            <label>Especificações (uma por linha, "Chave: Valor")</label>
-            <textarea rows={4} value={especificacoesValor} onChange={e => setEspecificacoesValor(e.target.value)}
-              placeholder={'Formato: 9,7x8,5cm\nMaterial: Porcelana\nProdução: 2 dias úteis'} />
-          </div>
-
-          {erro && <p className="adm-error">{erro}</p>}
-
-          <div className="modal-actions">
-            <button className="btn-outline-full btn-flex" onClick={onClose}>Cancelar</button>
-            <button className="btn-primary btn-flex" disabled={salvando} onClick={salvar}>
-              {salvando ? 'Salvando…' : 'Salvar produto'}
-            </button>
-          </div>
+          <button className="mt-2.5 text-sm font-semibold text-rose hover:underline" onClick={addCor}>+ Adicionar cor</button>
+          <input ref={corFileInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => onFotoCorEscolhida(e.target.files?.[0] ?? null)} />
         </div>
-      )}
+
+        <div className="mb-5 rounded-2xl border border-cream-200 p-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-bold uppercase tracking-wide text-ink-muted">Especificações (uma por linha, "Chave: Valor")</span>
+            <textarea
+              rows={4} value={especificacoesValor} onChange={e => setEspecificacoesValor(e.target.value)}
+              placeholder={'Formato: 9,7x8,5cm\nMaterial: Porcelana\nProdução: 2 dias úteis'}
+              className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm outline-none focus:border-rose"
+            />
+          </label>
+        </div>
+
+        {erro && <p className="mb-4 text-sm font-semibold text-rose">{erro}</p>}
+
+        <div className="flex gap-3">
+          <button className="flex-1 rounded-2xl border border-cream-200 px-6 py-3 font-bold text-ink transition hover:border-rose hover:text-rose" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="flex-1 rounded-2xl bg-rose px-6 py-3 font-bold text-white transition hover:brightness-95 disabled:opacity-50" disabled={salvando} onClick={salvar}>
+            {salvando ? 'Salvando…' : 'Salvar produto'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

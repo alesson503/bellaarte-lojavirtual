@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   listErpProducts, listLojaProducts, sincronizarProdutosErp,
   getAdesivoStatus, corrigirNomeAdesivo,
@@ -13,6 +13,7 @@ export default function AdminProducts() {
   const [lojaProdutos, setLojaProdutos] = useState<LojaProduto[] | null>(null);
   const [erpProdutos, setErpProdutos] = useState<ErpProduto[] | null>(null);
   const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
   const [msg, setMsg] = useState('');
   const [editando, setEditando] = useState<LojaProduto | null>(null);
@@ -23,6 +24,13 @@ export default function AdminProducts() {
   }
 
   useEffect(carregar, []);
+
+  const filtrados = useMemo(() => {
+    if (!lojaProdutos) return null;
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return lojaProdutos;
+    return lojaProdutos.filter(p => p.nome.toLowerCase().includes(termo) || p.categoria.toLowerCase().includes(termo));
+  }, [lojaProdutos, busca]);
 
   async function sincronizar() {
     setSincronizando(true);
@@ -40,57 +48,76 @@ export default function AdminProducts() {
 
   return (
     <>
-      <div className="adm-panel" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+      <div className="mb-5 rounded-2xl border border-cream-200 bg-white p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2>Produtos na vitrine</h2>
-            <p className="sub">
+            <h2 className="font-display text-lg font-bold text-ink">Produtos na vitrine</h2>
+            <p className="mt-1 max-w-2xl text-sm text-ink-muted">
               Produtos simples (preço fixo) puxados do seu ERP automaticamente a cada 30 minutos — são esses que aparecem
               no catálogo da loja. Adesivo, Cartão de Visita e Banner continuam com o configurador próprio, não entram aqui.
             </p>
           </div>
-          <button className="btn-outline-full" style={{ whiteSpace: 'nowrap' }} disabled={sincronizando} onClick={sincronizar}>
-            {sincronizando ? 'Sincronizando…' : 'Sincronizar agora'}
+          <button
+            className="whitespace-nowrap rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-bold text-ink transition hover:border-rose hover:text-rose disabled:opacity-50"
+            disabled={sincronizando} onClick={sincronizar}
+          >
+            {sincronizando ? '🔄 Sincronizando…' : '🔄 Sincronizar agora'}
           </button>
         </div>
-        {msg && <p style={{ fontSize: 12.5, color: 'var(--violet-deep)', marginTop: 10 }}>{msg}</p>}
+        {msg && <p className="mt-3 text-sm font-semibold text-rose">{msg}</p>}
+
+        <input
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+          placeholder="Buscar produto ou categoria..."
+          className="mt-4 w-full max-w-xs rounded-2xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm outline-none focus:border-rose"
+        />
 
         {erro ? (
-          <div className="adm-empty">{erro}</div>
-        ) : !lojaProdutos ? (
-          <div className="adm-empty">Carregando…</div>
-        ) : lojaProdutos.length === 0 ? (
-          <div className="adm-empty">Nenhum produto sincronizado ainda — clique em "Sincronizar agora".</div>
+          <p className="mt-4 text-center text-sm text-ink-muted">{erro}</p>
+        ) : !filtrados ? (
+          <p className="mt-4 text-center text-sm text-ink-muted">Carregando…</p>
+        ) : filtrados.length === 0 ? (
+          <p className="mt-4 text-center text-sm text-ink-muted">Nenhum produto encontrado.</p>
         ) : (
-          <div className="adm-table-wrap">
-          <table className="adm-table" style={{ marginTop: 16 }}>
-            <thead>
-              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th></th></tr>
-            </thead>
-            <tbody>
-              {lojaProdutos.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    {p.imagem_url ? (
-                      <img src={p.imagem_url} alt={p.nome} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)' }} />
-                    )}
-                  </td>
-                  <td><b>{p.nome}</b></td>
-                  <td>{p.categoria}</td>
-                  <td>
-                    {p.desconto_percentual > 0 && <span className="old-price">{fmt(p.preco_original)}</span>}
-                    {fmt(p.preco)}{p.unidade && <small> /{p.unidade}</small>}
-                    {p.desconto_percentual > 0 && <span className="badge-multi" style={{ position: 'static', display: 'inline-block', marginLeft: 8 }}>-{p.desconto_percentual}%</span>}
-                  </td>
-                  <td>
-                    <button className="adm-link-btn" style={{ margin: 0 }} onClick={() => setEditando(p)}>Editar produto</button>
-                  </td>
+          <div className="mt-4 overflow-x-auto rounded-xl border border-cream-200">
+            <table className="w-full min-w-170 text-left text-sm">
+              <thead className="border-b border-cream-200 text-xs uppercase tracking-wide text-ink-muted">
+                <tr>
+                  <th className="p-3">Produto</th><th className="p-3">Categoria</th><th className="p-3">Preço</th><th className="p-3">Disponível</th><th className="p-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtrados.map(p => (
+                  <tr key={p.id} className="border-b border-cream-100 last:border-0">
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        {p.imagem_url ? (
+                          <img src={p.imagem_url} alt={p.nome} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 shrink-0 rounded-lg border border-dashed border-cream-200 bg-cream-50" />
+                        )}
+                        <button className="font-semibold text-ink hover:text-rose hover:underline" onClick={() => setEditando(p)}>{p.nome}</button>
+                      </div>
+                    </td>
+                    <td className="p-3 text-ink-muted">{p.categoria}</td>
+                    <td className="p-3">
+                      {p.desconto_percentual > 0 && <span className="mr-1.5 text-ink-muted line-through">{fmt(p.preco_original)}</span>}
+                      <span className="font-semibold text-ink">{fmt(p.preco)}</span>{p.unidade && <span className="text-ink-muted"> /{p.unidade}</span>}
+                      {p.desconto_percentual > 0 && <span className="ml-2 rounded-full bg-rose px-2 py-0.5 text-xs font-bold text-white">-{p.desconto_percentual}%</span>}
+                    </td>
+                    <td className="p-3">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.ativo ? 'bg-green-100 text-green-700' : 'bg-cream-200 text-ink-muted'}`}>
+                        {p.ativo ? 'Sim' : 'Não'}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <button className="font-semibold text-rose hover:underline" onClick={() => setEditando(p)}>Editar produto</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -101,33 +128,31 @@ export default function AdminProducts() {
 
       <ImagensCatalogoFixoPanel />
 
-      <div className="adm-panel" style={{ marginTop: 20 }}>
-        <h2>Catálogo completo do ERP</h2>
-        <p className="sub">Todos os produtos ativos no ERP (inclusive os que já têm configurador na loja e por isso não entram na vitrine acima) — só pra conferência.</p>
+      <div className="mt-5 rounded-2xl border border-cream-200 bg-white p-5">
+        <h2 className="font-display text-lg font-bold text-ink">Catálogo completo do ERP</h2>
+        <p className="mt-1 text-sm text-ink-muted">Todos os produtos ativos no ERP (inclusive os que já têm configurador na loja e por isso não entram na vitrine acima) — só pra conferência.</p>
         {!erpProdutos ? (
-          <div className="adm-empty">Carregando…</div>
+          <p className="mt-4 text-center text-sm text-ink-muted">Carregando…</p>
         ) : (
-          <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead>
-              <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Unidade</th></tr>
-            </thead>
-            <tbody>
-              {erpProdutos.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    {p.foto_url ? (
-                      <img src={p.foto_url} alt={p.nome} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
-                    ) : '—'}
-                  </td>
-                  <td><b>{p.nome}</b></td>
-                  <td>{p.categoria}</td>
-                  <td>{fmt(p.preco)}</td>
-                  <td>{p.unidade_venda === 'm2' ? 'por m²' : 'por unidade'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-4 overflow-x-auto rounded-xl border border-cream-200">
+            <table className="w-full min-w-140 text-left text-sm">
+              <thead className="border-b border-cream-200 text-xs uppercase tracking-wide text-ink-muted">
+                <tr><th className="p-3">Foto</th><th className="p-3">Nome</th><th className="p-3">Categoria</th><th className="p-3">Preço</th><th className="p-3">Unidade</th></tr>
+              </thead>
+              <tbody>
+                {erpProdutos.map(p => (
+                  <tr key={p.id} className="border-b border-cream-100 last:border-0">
+                    <td className="p-3">
+                      {p.foto_url ? <img src={p.foto_url} alt={p.nome} className="h-9 w-9 rounded-lg object-cover" /> : <span className="text-ink-muted">—</span>}
+                    </td>
+                    <td className="p-3"><b className="text-ink">{p.nome}</b></td>
+                    <td className="p-3 text-ink-muted">{p.categoria}</td>
+                    <td className="p-3 font-semibold text-ink">{fmt(p.preco)}</td>
+                    <td className="p-3 text-ink-muted">{p.unidade_venda === 'm2' ? 'por m²' : 'por unidade'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -168,21 +193,21 @@ function AdesivoStatusPanel() {
   const foraDeSincronia = combos?.filter(c => !c.sincronizado) ?? [];
 
   return (
-    <div className="adm-panel" style={{ marginTop: 20 }}>
-      <h2>Preço do configurador de Adesivo</h2>
-      <p className="sub">
+    <div className="mt-5 rounded-2xl border border-cream-200 bg-white p-5">
+      <h2 className="font-display text-lg font-bold text-ink">Preço do configurador de Adesivo</h2>
+      <p className="mt-1 text-sm text-ink-muted">
         Preço puxado do ERP casando pelo nome exato do produto — igual os simples, mas em formato de calculadora
         (Material × Acabamento). Se um nome mudar lá, a loja mantém o último preço bom e avisa aqui.
       </p>
 
       {erro ? (
-        <div className="adm-empty">{erro}</div>
+        <p className="mt-4 text-center text-sm text-ink-muted">{erro}</p>
       ) : !combos ? (
-        <div className="adm-empty">Carregando…</div>
+        <p className="mt-4 text-center text-sm text-ink-muted">Carregando…</p>
       ) : (
         <>
           {foraDeSincronia.length > 0 && (
-            <div className="adm-hint" style={{ borderColor: 'var(--blush-deep)', marginBottom: 16 }}>
+            <div className="mt-4 rounded-xl border border-rose bg-rose-50 p-3 text-sm text-ink">
               ⚠️ {foraDeSincronia.length} combinaç{foraDeSincronia.length > 1 ? 'ões' : 'ão'} não {foraDeSincronia.length > 1 ? 'foram encontradas' : 'foi encontrada'} no ERP
               na última tentativa — a loja está usando o último preço conhecido (não quebrou pro cliente).
               {sugestoes.length > 0 && (
@@ -190,47 +215,47 @@ function AdesivoStatusPanel() {
               )}
             </div>
           )}
-          <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead>
-              <tr><th>Material</th><th>Acabamento</th><th>Preço</th><th>Nome esperado no ERP</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {combos.map(c => {
-                const key = `${c.material}|${c.acabamento}`;
-                return (
-                  <tr key={key}>
-                    <td>{c.material}</td>
-                    <td>{c.acabamento}</td>
-                    <td>{c.preco != null ? fmt(c.preco) : '—'}</td>
-                    <td>
-                      {editando === key ? (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <input value={novoNome} onChange={e => setNovoNome(e.target.value)}
-                            style={{ height: 32, borderRadius: 8, border: '1.5px solid var(--line)', padding: '0 8px', fontSize: 12.5, flex: 1 }} />
-                          <button className="adm-link-btn" style={{ margin: 0 }} disabled={salvando} onClick={() => salvar(c.material, c.acabamento)}>
-                            {salvando ? '...' : 'Salvar'}
+          <div className="mt-4 overflow-x-auto rounded-xl border border-cream-200">
+            <table className="w-full min-w-160 text-left text-sm">
+              <thead className="border-b border-cream-200 text-xs uppercase tracking-wide text-ink-muted">
+                <tr><th className="p-3">Material</th><th className="p-3">Acabamento</th><th className="p-3">Preço</th><th className="p-3">Nome esperado no ERP</th><th className="p-3">Status</th></tr>
+              </thead>
+              <tbody>
+                {combos.map(c => {
+                  const key = `${c.material}|${c.acabamento}`;
+                  return (
+                    <tr key={key} className="border-b border-cream-100 last:border-0">
+                      <td className="p-3">{c.material}</td>
+                      <td className="p-3">{c.acabamento}</td>
+                      <td className="p-3 font-semibold text-ink">{c.preco != null ? fmt(c.preco) : '—'}</td>
+                      <td className="p-3">
+                        {editando === key ? (
+                          <div className="flex gap-1.5">
+                            <input value={novoNome} onChange={e => setNovoNome(e.target.value)}
+                              className="h-8 flex-1 rounded-lg border border-cream-200 px-2 text-sm outline-none focus:border-rose" />
+                            <button className="font-semibold text-rose hover:underline" disabled={salvando} onClick={() => salvar(c.material, c.acabamento)}>
+                              {salvando ? '...' : 'Salvar'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span>{c.erp_nome_esperado}</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {c.sincronizado ? (
+                          <span className="text-xs font-bold text-rose">✓ ok</span>
+                        ) : editando === key ? null : (
+                          <button className="text-xs font-bold text-rose hover:underline"
+                            onClick={() => { setEditando(key); setNovoNome(c.erp_nome_esperado); }}>
+                            ⚠️ corrigir nome
                           </button>
-                        </div>
-                      ) : (
-                        <span>{c.erp_nome_esperado}</span>
-                      )}
-                    </td>
-                    <td>
-                      {c.sincronizado ? (
-                        <span style={{ color: 'var(--violet-deep)', fontWeight: 700, fontSize: 12.5 }}>✓ ok</span>
-                      ) : editando === key ? null : (
-                        <button className="adm-link-btn" style={{ color: 'var(--blush-deep)', margin: 0 }}
-                          onClick={() => { setEditando(key); setNovoNome(c.erp_nome_esperado); }}>
-                          ⚠️ corrigir nome
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -290,61 +315,61 @@ function ImagensCatalogoFixoPanel() {
   }
 
   return (
-    <div className="adm-panel" style={{ marginTop: 20 }}>
-      <h2>Fotos do catálogo fixo</h2>
-      <p className="sub">
+    <div className="mt-5 rounded-2xl border border-cream-200 bg-white p-5">
+      <h2 className="font-display text-lg font-bold text-ink">Fotos do catálogo fixo</h2>
+      <p className="mt-1 text-sm text-ink-muted">
         Panfletos, Wind Banner, Placa PS e Banner/Lona têm preço calculado (não vêm do ERP), então não têm foto
         cadastrada em lugar nenhum — sem uma foto aqui, o card mostra o ícone da categoria.
       </p>
 
       {erro ? (
-        <div className="adm-empty">{erro}</div>
+        <p className="mt-4 text-center text-sm text-ink-muted">{erro}</p>
       ) : !imagens ? (
-        <div className="adm-empty">Carregando…</div>
+        <p className="mt-4 text-center text-sm text-ink-muted">Carregando…</p>
       ) : (
-        <div className="adm-table-wrap">
-        <table className="adm-table" style={{ marginTop: 16 }}>
-          <thead>
-            <tr><th>Foto</th><th>Nome</th><th>Categoria</th><th></th></tr>
-          </thead>
-          <tbody>
-            {PRODUTOS_CATALOGO_FIXO.map(p => {
-              const foto = imagens[p.id];
-              return (
-                <tr key={p.id}>
-                  <td>
-                    {foto ? (
-                      <img src={foto} alt={p.nome} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--paper)', border: '1px dashed var(--line)' }} />
-                    )}
-                  </td>
-                  <td><b>{p.nome}</b></td>
-                  <td>{p.categoria}</td>
-                  <td>
-                    {enviandoId === p.id ? (
-                      <span style={{ fontSize: 12.5, color: 'var(--graphite-faint)' }}>Enviando…</span>
-                    ) : (
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="adm-link-btn" style={{ margin: 0 }} onClick={() => pedirFoto(p.id)}>
-                          {foto ? 'Trocar foto' : 'Subir foto'}
-                        </button>
-                        {foto && (
-                          <button className="adm-link-btn" style={{ margin: 0, color: 'var(--blush-deep)' }} onClick={() => remover(p.id)}>
-                            Remover foto
+        <div className="mt-4 overflow-x-auto rounded-xl border border-cream-200">
+          <table className="w-full min-w-140 text-left text-sm">
+            <thead className="border-b border-cream-200 text-xs uppercase tracking-wide text-ink-muted">
+              <tr><th className="p-3">Foto</th><th className="p-3">Nome</th><th className="p-3">Categoria</th><th className="p-3"></th></tr>
+            </thead>
+            <tbody>
+              {PRODUTOS_CATALOGO_FIXO.map(p => {
+                const foto = imagens[p.id];
+                return (
+                  <tr key={p.id} className="border-b border-cream-100 last:border-0">
+                    <td className="p-3">
+                      {foto ? (
+                        <img src={foto} alt={p.nome} className="h-10 w-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg border border-dashed border-cream-200 bg-cream-50" />
+                      )}
+                    </td>
+                    <td className="p-3"><b className="text-ink">{p.nome}</b></td>
+                    <td className="p-3 text-ink-muted">{p.categoria}</td>
+                    <td className="p-3">
+                      {enviandoId === p.id ? (
+                        <span className="text-sm text-ink-muted">Enviando…</span>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button className="font-semibold text-rose hover:underline" onClick={() => pedirFoto(p.id)}>
+                            {foto ? 'Trocar foto' : 'Subir foto'}
                           </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                          {foto && (
+                            <button className="font-semibold text-rose hover:underline" onClick={() => remover(p.id)}>
+                              Remover foto
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
         onChange={e => onArquivoEscolhido(e.target.files?.[0] ?? null)} />
     </div>
   );

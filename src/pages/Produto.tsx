@@ -76,7 +76,6 @@ export default function Produto() {
 
   // ── preço + nome-pro-pedido, um por tipo ──
   const corObj = produto.tipo === 'simples' ? produto.cores?.find(c => c.nome === corSelecionada) ?? null : null;
-  const fotoExibida = corObj?.foto || produto.imagem;
 
   // `selMulti` só é preenchido pelo useEffect (depois do primeiro render) —
   // até lá ele chega vazio aqui embaixo. Sem esse fallback, produto.preco()
@@ -84,6 +83,13 @@ export default function Produto() {
   const selMultiAtual = produto.tipo === 'multi'
     ? Object.fromEntries(produto.dims.map(d => [d.key, selMulti[d.key] ?? d.options[0]]))
     : selMulti;
+
+  // Alguns produtos "multi" (Wind Banner, Cartão Duplo) trocam de foto
+  // conforme a combinação escolhida — cada combinação é um produto próprio
+  // no admin, com sua própria foto.
+  const fotoExibida = corObj?.foto
+    || (produto.tipo === 'multi' ? produto.fotoPorCombo?.(selMultiAtual) : undefined)
+    || produto.imagem;
 
   const m2 = Math.max(0.1, larg) * Math.max(0.1, alt);
   // Pra produto "multi" vendido por m² (Adesivo UV/Vinil), `preco()` devolve

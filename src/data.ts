@@ -3,7 +3,7 @@
 // Produtos com várias variações viram um "grupo" (MULTI) — mesma ficha de
 // produto pra tudo (foto + botões de opção), sem tela especial nenhuma.
 
-export type Categoria = 'Adesivo' | 'Banner' | 'Caneca' | 'Cartão de Visita' | 'Outros';
+export type Categoria = 'Adesivo' | 'Banner' | 'Wind Banner' | 'Caneca' | 'Cartão de Visita' | 'Cartões Duplo' | 'Outros';
 
 export interface MultiDim {
   key: string;
@@ -24,6 +24,10 @@ export interface MultiProduct {
   porM2?: boolean;
   preco: (v: Record<string, string>) => number | null;
   imagem?: string;
+  // Quando existe, a foto muda conforme a combinação escolhida (ex.: uma
+  // foto pro Wind Banner tamanho P, outra pro M) — cada foto vem do próprio
+  // produto individual cadastrado no admin. Sem isso, usa `imagem` fixo.
+  fotoPorCombo?: (v: Record<string, string>) => string | undefined;
 }
 
 export interface MedidaProduct {
@@ -56,7 +60,7 @@ export type Produto = MultiProduct | MedidaProduct | SimpleProduct;
 // vem de uma tabela real do sistema, não de uma fórmula inventada.
 export const MULTI: MultiProduct[] = [
   {
-    tipo: 'multi', id: 'windbanner', nome: 'Wind Banner', categoria: 'Banner',
+    tipo: 'multi', id: 'windbanner', nome: 'Wind Banner', categoria: 'Wind Banner',
     dims: [
       { key: 'tam', label: 'Tamanho', options: ['P', 'M', 'G', 'GG'] },
       { key: 'bk', label: 'Blackout', options: ['Sem', 'Com'] },
@@ -69,20 +73,24 @@ export const MULTI: MultiProduct[] = [
     },
   },
   {
-    tipo: 'multi', id: 'cartao', nome: 'Cartão de Visita', categoria: 'Cartão de Visita', unidade: 'un',
+    // Nome e preços conferidos direto na API de produção em 2026-09-26 — o
+    // sistema chama isso de "Cartão Duplo" (não "Cartão de Visita"), e não
+    // tem opção de verniz (isso era um valor inventado antes). Essa entrada
+    // fixa só serve de reserva pra quando o ERP estiver fora do ar — o
+    // agrupamento de verdade vem de `agruparCartaoDuplo` em useProdutos.ts.
+    tipo: 'multi', id: 'cartao-duplo', nome: 'Cartão Duplo', categoria: 'Cartões Duplo', unidade: 'un',
     dims: [
       { key: 'qtd', label: 'Quantidade', options: ['100', '250', '500', '1.000'] },
       { key: 'imp', label: 'Impressão', options: ['4x0', '4x1', '4x4'] },
-      { key: 'verniz', label: 'Verniz (só em 1.000un)', options: ['Sem', 'Com'] },
     ],
     preco(v) {
-      const qtd = Number(v.qtd.replace('.', ''));
-      const tabela = CARTAO_PRECOS[qtd];
-      if (!tabela) return null;
-      // "Com verniz" só existe pra 1.000un — nas outras quantidades essa
-      // combinação não existe no sistema (não cai pro preço sem verniz).
-      if (v.verniz === 'Com') return qtd === 1000 ? (tabela.comVerniz?.[v.imp] ?? null) : null;
-      return tabela.semVerniz[v.imp] ?? null;
+      const t: Record<string, Record<string, number>> = {
+        '100': { '4x0': 105, '4x1': 115, '4x4': 130 },
+        '250': { '4x0': 120, '4x1': 135, '4x4': 150 },
+        '500': { '4x0': 136, '4x1': 155, '4x4': 180 },
+        '1000': { '4x0': 180, '4x1': 170, '4x4': 210 },
+      };
+      return t[v.qtd.replace('.', '')]?.[v.imp] ?? null;
     },
   },
   {

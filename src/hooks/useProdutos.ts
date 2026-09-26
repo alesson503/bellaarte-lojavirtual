@@ -2,50 +2,88 @@ import { useEffect, useMemo, useState } from 'react';
 import { MULTI, MEDIDA, SIMPLES, type Produto, type Categoria, type SimpleProduct, type MultiProduct } from '../data';
 import { listLojaProducts, listCatalogoFixoImagens } from '../services/productsService';
 
-// Wind Banner vem do ERP como 8 produtos soltos — um por combinação de
-// Tamanho (P/M/G/GG) x Blackout (Com/Sem), com nome tipo
-// "Wind Banner(G) C/Blackout" ou "Wind Banner(M) S/blackout" (a caixa de
-// "Blackout" varia no cadastro real, por isso o /i). Conferido direto na
-// API de produção em 2026-09-26 (os 8 nomes reais batem com esse padrão).
-// Aqui a gente detecta e junta os 8 num produto "multi" só — preço de cada
-// combinação vem direto do que já está cadastrado, sem inventar nada. Se
-// algum dia parar de vir do ERP (ou mudar o nome lá), a loja cai pro Wind
-// Banner fixo de `MULTI` como reserva.
-const WIND_BANNER_RE = /wind\s*banner\s*\(\s*(p|m|gg|g)\s*\)\s*(c|s)\s*\/\s*blackout/i;
-
-function agruparWindBanner(produtos: SimpleProduct[]): { restantes: SimpleProduct[]; grupo: MultiProduct | null } {
+// Alguns produtos vêm do ERP como vários itens soltos — um por combinação
+// de opção (ex.: Tamanho x Blackout, ou Quantidade x Impressão). Aqui a
+// gente detecta o padrão no nome e junta tudo num produto "multi" só —
+// preço E foto de cada combinação vêm direto do que já está cadastrado
+// (cada item mantém sua própria foto, trocada conforme a escolha na
+// página do produto). Sem inventar nada; se o ERP não tiver esses nomes
+// (ambiente local, ou o nome mudar lá), cai pro fixo de `MULTI` como
+// reserva.
+function agruparPorNome(
+  produtos: SimpleProduct[],
+  regex: RegExp,
+  extrair: (m: RegExpMatchArray) => Record<string, string>,
+  config: { id: string; nome: string; dims: { key: string; label: string; ordem: string[] }[] },
+): { restantes: SimpleProduct[]; grupo: MultiProduct | null } {
   const restantes: SimpleProduct[] = [];
-  const precos: Record<string, Record<string, number>> = {};
+  const precos: Record<string, number> = {};
+  const fotos: Record<string, string> = {};
+  const presentes: Record<string, Set<string>> = {};
   let categoria: Categoria | null = null;
-  let foto: string | undefined;
+  let fotoGeral: string | undefined;
+
+  const chaveDe = (v: Record<string, string>) => config.dims.map(d => v[d.key]).join('|');
 
   for (const p of produtos) {
-    const m = p.nome.match(WIND_BANNER_RE);
+    const m = p.nome.match(regex);
     if (!m) { restantes.push(p); continue; }
-    const tam = m[1].toUpperCase();
-    const bk = m[2].toUpperCase() === 'C' ? 'Com' : 'Sem';
-    precos[tam] = precos[tam] || {};
-    precos[tam][bk] = p.preco;
+    const valores = extrair(m);
+    const chave = chaveDe(valores);
+    precos[chave] = p.preco;
+    if (p.imagem) fotos[chave] = p.imagem;
     categoria = categoria ?? p.categoria;
-    foto = foto ?? p.imagem;
+    fotoGeral = fotoGeral ?? p.imagem;
+    for (const d of config.dims) {
+      (presentes[d.key] ??= new Set()).add(valores[d.key]);
+    }
   }
 
   if (!categoria) return { restantes, grupo: null };
 
-  const tamanhosPresentes = (['P', 'M', 'G', 'GG'] as const).filter(t => precos[t]);
   const grupo: MultiProduct = {
     tipo: 'multi',
-    id: 'windbanner',
-    nome: 'Wind Banner',
+    id: config.id,
+    nome: config.nome,
     categoria,
-    imagem: foto,
-    dims: [
-      { key: 'tam', label: 'Tamanho', options: tamanhosPresentes },
-      { key: 'bk', label: 'Blackout', options: ['Sem', 'Com'] },
-    ],
-    preco: v => precos[v.tam]?.[v.bk] ?? null,
+    imagem: fotoGeral,
+    dims: config.dims.map(d => ({ key: d.key, label: d.label, options: d.ordem.filter(v => presentes[d.key]?.has(v)) })),
+    preco: v => precos[chaveDe(v)] ?? null,
+    fotoPorCombo: v => fotos[chaveDe(v)],
   };
   return { restantes, grupo };
+}
+
+// Conferido direto na API de produção em 2026-09-26: 8 itens tipo
+// "Wind Banner(G) C/Blackout" / "Wind Banner(M) S/blackout" (a caixa de
+// "Blackout" varia no cadastro real, por isso o /i).
+const WIND_BANNER_RE = /wind\s*banner\s*\(\s*(p|m|gg|g)\s*\)\s*(c|s)\s*\/\s*blackout/i;
+
+function agruparWindBanner(produtos: SimpleProduct[]) {
+  return agruparPorNome(
+    produtos, WIND_BANNER_RE,
+    m => ({ tam: m[1].toUpperCase(), bk: m[2].toUpperCase() === 'C' ? 'Com' : 'Sem' }),
+    { id: 'windbanner', nome: 'Wind Banner', dims: [
+      { key: 'tam', label: 'Tamanho', ordem: ['P', 'M', 'G', 'GG'] },
+      { key: 'bk', label: 'Blackout', ordem: ['Sem', 'Com'] },
+    ] },
+  );
+}
+
+// Conferido direto na API de produção: 12 itens tipo "1000 Cartão Duplo
+// 4x0" / "500 Cartão duplo  4X1" (o nome real é "Cartão Duplo", não
+// "Cartão de Visita" — e não existe opção de verniz no cadastro real).
+const CARTAO_DUPLO_RE = /^\s*(\d+)\s*cart[aã]o\s*duplo\s*(4x0|4x1|4x4)/i;
+
+function agruparCartaoDuplo(produtos: SimpleProduct[]) {
+  return agruparPorNome(
+    produtos, CARTAO_DUPLO_RE,
+    m => ({ qtd: m[1], imp: m[2].toLowerCase() }),
+    { id: 'cartao-duplo', nome: 'Cartão Duplo', dims: [
+      { key: 'qtd', label: 'Quantidade', ordem: ['100', '250', '500', '1000'] },
+      { key: 'imp', label: 'Impressão', ordem: ['4x0', '4x1', '4x4'] },
+    ] },
+  );
 }
 
 // Produtos simples vêm do banco (sincronizado do ERP) — se a busca falhar
@@ -76,17 +114,20 @@ export function useProdutos() {
       })
       .catch(() => { /* mantém o catálogo fixo (fallback) */ });
 
-    // Fotos dos produtos "multi"/"medida" (Panfletos, Wind Banner, Placa PS,
-    // Banner/Lona) — opcional, sobem pelo painel admin; sem foto, o card
-    // continua mostrando o ícone da categoria, igual sempre foi.
+    // Fotos dos produtos "multi"/"medida" (Panfletos, Placa PS, Banner/Lona)
+    // — opcional, sobem pelo painel admin; sem foto, o card continua
+    // mostrando o ícone da categoria, igual sempre foi.
     listCatalogoFixoImagens().then(setImagensFixo).catch(() => { /* mantém sem foto */ });
   }, []);
 
   const catalogo: Produto[] = useMemo(() => {
-    const { restantes, grupo } = agruparWindBanner(simples);
+    const wind = agruparWindBanner(simples);
+    const { restantes, grupo: grupoCartao } = agruparCartaoDuplo(wind.restantes);
+    const grupos = [wind.grupo, grupoCartao].filter((g): g is MultiProduct => g != null);
+    const idsSubstituidos = new Set(grupos.map(g => g.id));
     return [
-      ...MULTI.filter(p => p.id !== 'windbanner' || !grupo).map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
-      ...(grupo ? [grupo] : []),
+      ...MULTI.filter(p => !idsSubstituidos.has(p.id)).map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
+      ...grupos,
       ...MEDIDA.map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
       ...restantes,
     ];
