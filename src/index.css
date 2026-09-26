@@ -72,12 +72,16 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0; background-color: var(--paper); color: var(--ink);
   background-image: url("/fundo.png"); background-size: cover; background-position: center; background-attachment: fixed;
   font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
+  /* Cards em polaroid giram (rotate) pra dar o efeito de mural — a caixa
+     rotacionada estoura a largura da tela em alguns pixels no mobile.
+     overflow-x aqui esconde essa sobra sem cortar nada visualmente. */
+  overflow-x: hidden;
 }
 .font-serif-display, .serif {
   font-family: var(--font-sora);
