@@ -19,6 +19,7 @@ function agruparPorNome(
   const restantes: SimpleProduct[] = [];
   const precos: Record<string, number> = {};
   const fotos: Record<string, string> = {};
+  const erpIds: Record<string, string> = {};
   const presentes: Record<string, Set<string>> = {};
   let categoria: Categoria | null = null;
   let fotoGeral: string | undefined;
@@ -32,6 +33,7 @@ function agruparPorNome(
     const chave = chaveDe(valores);
     precos[chave] = p.preco;
     if (p.imagem) fotos[chave] = p.imagem;
+    if (p.erpId) erpIds[chave] = p.erpId;
     categoria = categoria ?? p.categoria;
     fotoGeral = fotoGeral ?? p.imagem;
     for (const d of config.dims) {
@@ -50,6 +52,7 @@ function agruparPorNome(
     dims: config.dims.map(d => ({ key: d.key, label: d.label, options: d.ordem.filter(v => presentes[d.key]?.has(v)) })),
     preco: v => precos[chaveDe(v)] ?? null,
     fotoPorCombo: v => fotos[chaveDe(v)],
+    erpIdPorCombo: v => erpIds[chaveDe(v)],
   };
   return { restantes, grupo };
 }
@@ -101,6 +104,7 @@ export function useProdutos() {
         setSimples(produtos.map(p => ({
           tipo: 'simples' as const,
           nome: p.nome,
+          erpId: p.erp_id ?? undefined,
           categoria: p.categoria as Categoria,
           preco: p.preco,
           unidade: p.unidade ?? undefined,

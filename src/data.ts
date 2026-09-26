@@ -28,6 +28,9 @@ export interface MultiProduct {
   // foto pro Wind Banner tamanho P, outra pro M) — cada foto vem do próprio
   // produto individual cadastrado no admin. Sem isso, usa `imagem` fixo.
   fotoPorCombo?: (v: Record<string, string>) => string | undefined;
+  // Id do produto no ERP de cada combinação (só nos grupos montados a
+  // partir de produtos do ERP) — o ERP usa pra achar o custo.
+  erpIdPorCombo?: (v: Record<string, string>) => string | undefined;
 }
 
 export interface MedidaProduct {
@@ -42,6 +45,7 @@ export interface MedidaProduct {
 export interface SimpleProduct {
   tipo: 'simples';
   nome: string;
+  erpId?: string;
   categoria: Categoria;
   preco: number;
   unidade?: string;

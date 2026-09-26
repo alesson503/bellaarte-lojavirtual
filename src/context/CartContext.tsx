@@ -2,9 +2,11 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { CartItem } from '../types';
 import { useToast } from './ToastContext';
 
+export type ErpLink = Pick<CartItem, 'erpId' | 'erpNome' | 'm2'>;
+
 interface CartContextValue {
   cart: CartItem[];
-  addToCart: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string) => void;
+  addToCart: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string, erp?: ErpLink) => void;
   removeFromCart: (idx: number) => void;
 }
 
@@ -16,8 +18,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string) {
-    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined, imagem }]);
+  function addToCart(nome: string, preco: number, quantidade = 1, observacao?: string, arte?: CartItem['arte'] | null, imagem?: string, erp?: ErpLink) {
+    setCart(prev => [...prev, { nome, preco, quantidade, observacao: observacao?.trim() || undefined, arte: arte || undefined, imagem, ...erp }]);
     const totalItem = preco * quantidade;
     toast(`✓ ${nome}${quantidade > 1 ? ` ×${quantidade}` : ''} adicionado — ${totalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
   }

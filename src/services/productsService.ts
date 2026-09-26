@@ -37,6 +37,7 @@ export interface LojaProduto {
   unidade: string | null;
   ativo: boolean;
   origem: string;
+  erp_id: string | null;
   imagem_url: string | null;
   descricao: string | null;
   cores: { nome: string; foto: string | null }[];
@@ -119,11 +120,13 @@ export async function removerImagemCatalogoFixo(produtoId: string): Promise<void
 // nome), mesmo formato que a tabela fixa antiga em data.ts.
 export type AdesivoPrecos = Record<'UV' | 'Vinil', Record<'Recortado' | 'Refilado' | 'Laminado', number>>;
 
-export async function getAdesivoPrecos(): Promise<AdesivoPrecos> {
+export type AdesivoNomesErp = Partial<Record<'UV' | 'Vinil', Partial<Record<'Recortado' | 'Refilado' | 'Laminado', string>>>>;
+
+export async function getAdesivoPrecos(): Promise<{ precos: AdesivoPrecos; nomes: AdesivoNomesErp }> {
   const res = await fetch(`${API_URL}/api/produtos/adesivo-precos`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erro ao buscar preços do Adesivo.');
-  return data.precos;
+  return { precos: data.precos, nomes: data.nomes ?? {} };
 }
 
 export interface AdesivoCombo {

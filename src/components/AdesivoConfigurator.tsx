@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
-import { getAdesivoPrecos } from '../services/productsService';
+import { getAdesivoPrecos, type AdesivoNomesErp } from '../services/productsService';
+import type { ErpLink } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
 import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
 import type { ArteAnexo } from '../types';
@@ -12,7 +13,7 @@ export default function AdesivoConfigurator({
   onAdd,
   sectionRef,
 }: {
-  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null) => void;
+  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null, imagem?: string, erp?: ErpLink) => void;
   sectionRef?: RefObject<HTMLElement | null>;
 }) {
   const [tipo, setTipo] = useState<Tipo>('UV');
@@ -23,8 +24,9 @@ export default function AdesivoConfigurator({
   const { fator, percentual } = usePromocao();
   // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
   const [precos, setPrecos] = useState(ADESIVO_PRECOS_FALLBACK);
+  const [nomesErp, setNomesErp] = useState<AdesivoNomesErp>({});
   useEffect(() => {
-    getAdesivoPrecos().then(setPrecos).catch(() => { /* mantém a tabela fixa (fallback) */ });
+    getAdesivoPrecos().then(r => { setPrecos(r.precos); setNomesErp(r.nomes); }).catch(() => { /* mantém a tabela fixa (fallback) */ });
   }, []);
 
   // Preço direto por Largura × Altura (m²) — igual Banner/Lona, em vez do
@@ -115,7 +117,7 @@ export default function AdesivoConfigurator({
             <div className="cfg-note">
               Preço = largura × altura (m²) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
             </div>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${calc.larguraM.toFixed(2).replace('.', ',')}m × ${calc.alturaM.toFixed(2).replace('.', ',')}m)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined); setArte(null); }}>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${calc.larguraM.toFixed(2).replace('.', ',')}m × ${calc.alturaM.toFixed(2).replace('.', ',')}m)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined, undefined, { erpNome: nomesErp[tipo]?.[acab] ?? `Adesivo ${tipo} ${acab}`, m2: calc.m2 }); setArte(null); }}>
               Adicionar ao pedido
             </button>
           </div>

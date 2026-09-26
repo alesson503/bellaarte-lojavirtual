@@ -20,7 +20,7 @@ function sanitizarCores(cores) {
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, origem, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true ORDER BY categoria, nome'
     );
     const { rows: promoRows } = await pool.query(
       `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes
@@ -44,13 +44,16 @@ router.get('/', async (req, res) => {
 // última sincronização não tenha achado o produto no ERP).
 router.get('/adesivo-precos', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT material, acabamento, preco FROM adesivo_precos');
+    const { rows } = await pool.query('SELECT material, acabamento, preco, erp_nome_esperado FROM adesivo_precos');
     const precos = {};
+    const nomes = {};
     for (const r of rows) {
       precos[r.material] ??= {};
       precos[r.material][r.acabamento] = r.preco;
+      nomes[r.material] ??= {};
+      nomes[r.material][r.acabamento] = r.erp_nome_esperado;
     }
-    res.json({ precos });
+    res.json({ precos, nomes });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Erro ao buscar preços do Adesivo.' });

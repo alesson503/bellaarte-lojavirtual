@@ -111,6 +111,10 @@ export default function Produto() {
     `${produto.nome} (${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m = ${m2.toFixed(2).replace('.', ',')}m²)`;
 
   const qtdPedido = produto.tipo === 'simples' ? quantidade : 1;
+  const erp = {
+    erpId: produto.tipo === 'simples' ? produto.erpId : produto.tipo === 'multi' ? produto.erpIdPorCombo?.(selMultiAtual) : undefined,
+    m2: produto.tipo === 'medida' || (produto.tipo === 'multi' && produto.porM2) ? m2 : undefined,
+  };
   const podeAdicionar = preco != null;
   const mensagemWhats = podeAdicionar
     ? `Olá! Quero pedir: ${nomeParaPedido}${qtdPedido > 1 ? ` — ${qtdPedido} un` : ''} — ${fmt(preco! * qtdPedido)}${observacao ? `\nObs: ${observacao}` : ''}`
@@ -118,13 +122,13 @@ export default function Produto() {
 
   function adicionar() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida, erp);
     navigate('/produtos');
   }
 
   function comprarAgora() {
     if (preco == null) return;
-    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida);
+    addToCart(nomeParaPedido, preco, qtdPedido, produto!.tipo === 'simples' ? observacao : undefined, undefined, fotoExibida, erp);
     navigate('/carrinho', { state: { openCheckout: true } });
   }
 
