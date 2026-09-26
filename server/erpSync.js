@@ -1,20 +1,9 @@
 // Sincronização com o ERP — busca os produtos uma vez e atualiza duas
 // coisas com o mesmo resultado:
-//  1) os produtos "simples" (preço fixo, sem calculadora própria)
-//  2) a tabela de preço do configurador de Adesivo (por nome esperado)
-//
-// Adesivo (UV/Vinil), Cartão de Visita, Banner e Placa PS/Panfletos já têm
-// configurador dedicado na loja — não entram na lista de "simples".
+//  1) todos os produtos ativos do ERP (a loja inteira vem daqui)
+//  2) a tabela de preço do Adesivo (por nome esperado) — só pro painel
+//     admin conferir; o configurador usa os produtos do item 1.
 const { pool } = require('./db');
-
-function ehConfiguravel(p) {
-  if (p.categoria === 'Cartao de Visita') return true;
-  if (p.categoria === 'Banner') return true; // Wind Banner (MULTI) e Banner/Lona (MEDIDA)
-  if (/^Adesivo (UV|Vinil)/i.test(p.nome)) return true; // configurador "Monte seu Adesivo"
-  if (/^Placa PS/i.test(p.nome)) return true; // configurador MULTI
-  if (/^Panfletos/i.test(p.nome)) return true; // configurador MULTI
-  return false;
-}
 
 async function syncProdutosFromErp() {
   if (!process.env.ERP_API_URL || !process.env.ERP_API_SECRET) {
@@ -27,9 +16,11 @@ async function syncProdutosFromErp() {
   if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou a busca de produtos.');
   const todosDoErp = erpData.produtos || [];
 
-  // 1) Produtos simples (foto do ERP só entra se ninguém subiu uma manual
-  // aqui na loja antes — ver imagem_origem).
-  const simples = todosDoErp.filter(p => !ehConfiguravel(p));
+  // 1) Todos os produtos ativos do ERP (foto do ERP só entra se ninguém
+  // subiu uma manual aqui na loja antes — ver imagem_origem). Os que têm
+  // variações (Panfletos, Cartão de Visita, Placa PS…) são agrupados no
+  // front (src/hooks/useProdutos.ts), não aqui.
+  const simples = todosDoErp;
   const vistosErpIds = [];
   for (const p of simples) {
     vistosErpIds.push(p.erp_id ?? p.id);
@@ -45,7 +36,7 @@ async function syncProdutosFromErp() {
            WHEN EXCLUDED.imagem_url IS NOT NULL THEN 'erp'
            ELSE 'nenhuma'
          END`,
-      [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : null, p.id, p.foto_url || null]
+      [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : p.unidade_venda === 'ml' ? 'm' : null, p.id, p.foto_url || null]
     );
   }
   if (vistosErpIds.length) {
