@@ -62,8 +62,9 @@ export default function Header({
 
   return (
     <>
-      <div className="bg-ink px-4 py-1.5 text-center text-xs text-white">
-        🚚 Frete combinado direto com você pelo WhatsApp &middot; ✂️ Arte revisada antes de imprimir &middot; 💬 Atendimento rápido
+      <div className="truncate whitespace-nowrap bg-ink px-4 py-1.5 text-center text-[11px] text-white sm:text-xs">
+        🚚 Frete combinado direto com você pelo WhatsApp
+        <span className="hidden sm:inline"> &middot; ✂️ Arte revisada antes de imprimir &middot; 💬 Atendimento rápido</span>
       </div>
       {promocao && (
         <div className="bg-rose px-4 py-2 text-center text-xs font-bold text-white">
@@ -97,6 +98,9 @@ export default function Header({
           </form>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button className="grid h-9 w-9 place-items-center rounded-full border border-cream-200 bg-white text-ink md:hidden" title="Buscar" onClick={() => setMobileNavOpen(o => !o)}>
+              <SearchIcon />
+            </button>
             <button className="grid h-9 w-9 place-items-center rounded-full border border-cream-200 bg-white text-ink md:hidden" title="Menu" onClick={() => setMobileNavOpen(o => !o)}>
               {mobileNavOpen ? '✕' : '☰'}
             </button>

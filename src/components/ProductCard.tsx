@@ -15,7 +15,11 @@ function emojiDaCategoria(categoria: string) {
 
 // Inclinações alternadas (efeito mural de polaroids) e fitas durex com
 // pontas rasgadas diferentes — cada card usa uma, pelo índice na grade.
-const ROTACOES = ['-rotate-2', 'rotate-2', '-rotate-1', 'rotate-1'];
+// Sem rotação no mobile (2 colunas, pouca margem): a ponta do card girado
+// passava uns pixels da tela pros dois lados e comia a margem, deixando o
+// card "colado" na borda. A partir do `sm` (mais colunas, mais espaço) a
+// inclinação volta normal.
+const ROTACOES = ['rotate-0 sm:-rotate-2', 'rotate-0 sm:rotate-2', 'rotate-0 sm:-rotate-1', 'rotate-0 sm:rotate-1'];
 const FITAS = [
   { clip: 'polygon(0% 15%, 8% 2%, 20% 8%, 50% 3%, 80% 7%, 92% 2%, 100% 12%, 96% 40%, 100% 60%, 95% 85%, 88% 98%, 60% 92%, 30% 98%, 10% 93%, 3% 70%, 0% 45%, 4% 28%)', rot: -5 },
   { clip: 'polygon(2% 10%, 14% 0%, 35% 6%, 55% 1%, 78% 8%, 100% 4%, 97% 35%, 100% 68%, 93% 96%, 72% 90%, 45% 97%, 22% 91%, 6% 98%, 0% 72%, 5% 40%, 0% 18%)', rot: 4 },
