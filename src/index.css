@@ -75,7 +75,7 @@
 html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0; background-color: var(--paper); color: var(--ink);
-  background-image: url("/fundo.png"); background-size: cover; background-position: center; background-attachment: fixed;
+  background-image: var(--fundo-url, url("/fundo.png")); background-size: cover; background-position: center; background-attachment: fixed;
   font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
   /* Cards em polaroid giram (rotate) pra dar o efeito de mural — a caixa

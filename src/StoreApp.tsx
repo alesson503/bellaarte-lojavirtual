@@ -45,14 +45,15 @@ export default function StoreApp() {
   const cartoesRef = useRef<HTMLElement>(null);
 
   // Carrossel do hero — foto real da loja (se o dono cadastrou uma em
-  // /admin/configuracoes) primeiro, seguida das fotos de ambiente do
-  // protótipo `loja-virtual`. Roda sozinho a cada 5s, com setas e bolinhas.
+  // /admin/aparência) primeiro, seguida das fotos de ambiente cadastradas
+  // lá também (ou as 4 padrão, se o dono não subiu nenhuma). Roda sozinho
+  // a cada 5s, com setas e bolinhas.
   const fotosHero = useMemo(
     () => [
       ...(settings.heroPhotoUrl ? [settings.heroPhotoUrl] : [heroCanecas]),
-      '/banner/hero-1.png', '/banner/hero-2.png', '/banner/hero-3.png', '/banner/hero-4.png',
+      ...(settings.carrosselFotos.length ? settings.carrosselFotos : ['/banner/hero-1.png', '/banner/hero-2.png', '/banner/hero-3.png', '/banner/hero-4.png']),
     ],
-    [settings.heroPhotoUrl],
+    [settings.heroPhotoUrl, settings.carrosselFotos],
   );
   const [heroSlide, setHeroSlide] = useState(0);
   const irParaSlide = useCallback((i: number) => setHeroSlide((i + fotosHero.length) % fotosHero.length), [fotosHero.length]);

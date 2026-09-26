@@ -21,6 +21,14 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--blush-deep', settings.colorAccent);
   }, [settings.colorPrimary, settings.colorPrimaryDeep, settings.colorAccent]);
 
+  // Fundo do site: se o admin subiu uma imagem própria, sobrepõe a padrão
+  // (public/fundo.png, usada via var() com fallback no CSS).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.fundoUrl) root.style.setProperty('--fundo-url', `url("${settings.fundoUrl}")`);
+    else root.style.removeProperty('--fundo-url');
+  }, [settings.fundoUrl]);
+
   function update(patch: Partial<SiteSettings>) {
     setSettings(prev => {
       const next = { ...prev, ...patch };
@@ -36,6 +44,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     root.style.removeProperty('--violet');
     root.style.removeProperty('--violet-deep');
     root.style.removeProperty('--blush-deep');
+    root.style.removeProperty('--fundo-url');
   }
 
   return (

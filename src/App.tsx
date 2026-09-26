@@ -11,6 +11,7 @@ import AdminOrders from './admin/AdminOrders';
 import AdminProducts from './admin/AdminProducts';
 import EditarProduto from './admin/EditarProduto';
 import AdminPromotions from './admin/AdminPromotions';
+import AdminAparencia from './admin/AdminAparencia';
 import AdminSiteSettings from './admin/AdminSiteSettings';
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="produtos" element={<AdminProducts />} />
         <Route path="produtos/:id" element={<EditarProduto />} />
         <Route path="promocoes" element={<AdminPromotions />} />
+        <Route path="aparencia" element={<AdminAparencia />} />
         <Route path="configuracoes" element={<AdminSiteSettings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
