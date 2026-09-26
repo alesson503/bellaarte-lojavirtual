@@ -2,24 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { MULTI, MEDIDA, SIMPLES, type Produto, type Categoria, type SimpleProduct, type MultiProduct } from '../data';
 import { listLojaProducts, listCatalogoFixoImagens } from '../services/productsService';
 
-// "Bandeira de Vento" vem do ERP como 8 produtos soltos — um por combinação
-// de Tamanho (P/M/G/GG) x Blackout (Com/Sem), cada um com nome tipo
-// "Bandeira de Vento (G) C/Blackout" ou "Bandeira do Vento (GG) S/blackout"
-// (o "de"/"do" e a caixa de "Blackout" variam no cadastro real). Aqui a
-// gente detecta esse padrão e junta os 8 num produto "multi" só — preço
-// de cada combinação vem direto do que já está cadastrado, sem inventar
-// nada. Se algum dia parar de vir do ERP (ou mudar o nome lá), a loja cai
-// pro Wind Banner fixo de `MULTI` como reserva.
-const BANDEIRA_VENTO_RE = /bandeira\s+(?:de|do)\s+vento\s*\(\s*(p|m|gg|g)\s*\)\s*(c|s)\s*\/\s*blackout/i;
+// Wind Banner vem do ERP como 8 produtos soltos — um por combinação de
+// Tamanho (P/M/G/GG) x Blackout (Com/Sem), com nome tipo
+// "Wind Banner(G) C/Blackout" ou "Wind Banner(M) S/blackout" (a caixa de
+// "Blackout" varia no cadastro real, por isso o /i). Conferido direto na
+// API de produção em 2026-09-26 (os 8 nomes reais batem com esse padrão).
+// Aqui a gente detecta e junta os 8 num produto "multi" só — preço de cada
+// combinação vem direto do que já está cadastrado, sem inventar nada. Se
+// algum dia parar de vir do ERP (ou mudar o nome lá), a loja cai pro Wind
+// Banner fixo de `MULTI` como reserva.
+const WIND_BANNER_RE = /wind\s*banner\s*\(\s*(p|m|gg|g)\s*\)\s*(c|s)\s*\/\s*blackout/i;
 
-function agruparBandeiraDeVento(produtos: SimpleProduct[]): { restantes: SimpleProduct[]; grupo: MultiProduct | null } {
+function agruparWindBanner(produtos: SimpleProduct[]): { restantes: SimpleProduct[]; grupo: MultiProduct | null } {
   const restantes: SimpleProduct[] = [];
   const precos: Record<string, Record<string, number>> = {};
   let categoria: Categoria | null = null;
   let foto: string | undefined;
 
   for (const p of produtos) {
-    const m = p.nome.match(BANDEIRA_VENTO_RE);
+    const m = p.nome.match(WIND_BANNER_RE);
     if (!m) { restantes.push(p); continue; }
     const tam = m[1].toUpperCase();
     const bk = m[2].toUpperCase() === 'C' ? 'Com' : 'Sem';
@@ -34,8 +35,8 @@ function agruparBandeiraDeVento(produtos: SimpleProduct[]): { restantes: SimpleP
   const tamanhosPresentes = (['P', 'M', 'G', 'GG'] as const).filter(t => precos[t]);
   const grupo: MultiProduct = {
     tipo: 'multi',
-    id: 'bandeira-de-vento',
-    nome: 'Bandeira de Vento',
+    id: 'windbanner',
+    nome: 'Wind Banner',
     categoria,
     imagem: foto,
     dims: [
@@ -82,7 +83,7 @@ export function useProdutos() {
   }, []);
 
   const catalogo: Produto[] = useMemo(() => {
-    const { restantes, grupo } = agruparBandeiraDeVento(simples);
+    const { restantes, grupo } = agruparWindBanner(simples);
     return [
       ...MULTI.filter(p => p.id !== 'windbanner' || !grupo).map(p => ({ ...p, imagem: imagensFixo[p.id] ?? p.imagem })),
       ...(grupo ? [grupo] : []),
