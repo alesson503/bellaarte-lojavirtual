@@ -58,6 +58,7 @@ export async function atualizarProdutoLoja(id: string, dados: {
   descricao: string;
   cores: { nome: string; foto: string | null }[];
   especificacoes: { chave: string; valor: string }[];
+  ativo?: boolean;
 }): Promise<void> {
   const res = await fetch(`${API_URL}/api/produtos/${id}`, {
     method: 'PUT',

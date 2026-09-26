@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   listErpProducts, listLojaProducts, sincronizarProdutosErp,
   getAdesivoStatus, corrigirNomeAdesivo,
@@ -7,16 +8,15 @@ import {
 } from '../services/productsService';
 import { fmt, MULTI, MEDIDA } from '../data';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
-import EditarProdutoModal from './EditarProdutoModal';
 
 export default function AdminProducts() {
+  const navigate = useNavigate();
   const [lojaProdutos, setLojaProdutos] = useState<LojaProduto[] | null>(null);
   const [erpProdutos, setErpProdutos] = useState<ErpProduto[] | null>(null);
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
   const [msg, setMsg] = useState('');
-  const [editando, setEditando] = useState<LojaProduto | null>(null);
 
   function carregar() {
     listLojaProducts().then(setLojaProdutos).catch(e => setErro(e instanceof Error ? e.message : 'Erro ao carregar produtos da loja.'));
@@ -97,7 +97,7 @@ export default function AdminProducts() {
                         ) : (
                           <div className="h-10 w-10 shrink-0 rounded-lg border border-dashed border-cream-200 bg-cream-50" />
                         )}
-                        <button className="font-semibold text-ink hover:text-rose hover:underline" onClick={() => setEditando(p)}>{p.nome}</button>
+                        <button className="font-semibold text-ink hover:text-rose hover:underline" onClick={() => navigate(`/admin/produtos/${p.id}`, { state: { produto: p } })}>{p.nome}</button>
                       </div>
                     </td>
                     <td className="p-3 text-ink-muted">{p.categoria}</td>
@@ -112,7 +112,7 @@ export default function AdminProducts() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <button className="font-semibold text-rose hover:underline" onClick={() => setEditando(p)}>Editar produto</button>
+                      <button className="font-semibold text-rose hover:underline" onClick={() => navigate(`/admin/produtos/${p.id}`, { state: { produto: p } })}>Editar produto</button>
                     </td>
                   </tr>
                 ))}
@@ -121,8 +121,6 @@ export default function AdminProducts() {
           </div>
         )}
       </div>
-
-      <EditarProdutoModal produto={editando} onClose={() => setEditando(null)} onChanged={carregar} />
 
       <AdesivoStatusPanel />
 

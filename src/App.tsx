@@ -9,6 +9,7 @@ import AdminLayout from './admin/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
 import AdminOrders from './admin/AdminOrders';
 import AdminProducts from './admin/AdminProducts';
+import EditarProduto from './admin/EditarProduto';
 import AdminPromotions from './admin/AdminPromotions';
 import AdminSiteSettings from './admin/AdminSiteSettings';
 
@@ -26,6 +27,7 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="pedidos" element={<AdminOrders />} />
         <Route path="produtos" element={<AdminProducts />} />
+        <Route path="produtos/:id" element={<EditarProduto />} />
         <Route path="promocoes" element={<AdminPromotions />} />
         <Route path="configuracoes" element={<AdminSiteSettings />} />
       </Route>
