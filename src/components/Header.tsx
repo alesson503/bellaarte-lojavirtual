@@ -115,8 +115,8 @@ export default function Header({
               <Link className="hidden rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" to="/admin" title="Voltar pro painel administrativo">⚙️ Admin</Link>
             )}
             {user ? (
-              <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title="Sair da conta" onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
-                <UserIcon /> {user.nome.split(' ')[0]}
+              <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title={`Sair da conta de ${user.nome}`} onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
+                <UserIcon /> {user.nome.split(' ')[0]} · Sair
               </button>
             ) : (
               <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title="Entrar / criar conta" onClick={() => setLoginOpen(true)}>
