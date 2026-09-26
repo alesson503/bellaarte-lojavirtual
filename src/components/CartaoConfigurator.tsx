@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react';
-import { CARTAO_PRECOS, IMP_LABEL } from '../data';
+import { IMP_LABEL, type MultiProduct } from '../data';
+import type { ErpLink } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
 import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
 import type { ArteAnexo } from '../types';
 
 const QTY_OPTIONS = [100, 250, 500, 1000];
+const IMPS = ['4x0', '4x1', '4x4'];
+
+// Preço e id do ERP vêm do grupo "Cartão de Visita" montado em
+// useProdutos.ts (itens "Cartão de Visita - 1000 uni C/verniz - 4x4"…).
+const chave = (qty: number, imp: string, verniz: 'nao' | 'sim') =>
+  ({ qtd: qty.toLocaleString('pt-BR'), imp, verniz: verniz === 'sim' ? 'Com' : 'Sem' });
 
 export default function CartaoConfigurator({
   onAdd,
   sectionRef,
+  grupo,
 }: {
-  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null) => void;
+  onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null, imagem?: string, erp?: ErpLink) => void;
   sectionRef?: RefObject<HTMLElement | null>;
+  grupo?: MultiProduct;
 }) {
   const [qty, setQty] = useState(1000);
   const [verniz, setVerniz] = useState<'nao' | 'sim'>('nao');
@@ -21,10 +30,12 @@ export default function CartaoConfigurator({
   const [arteVerso, setArteVerso] = useState<Arte | null>(null);
   const { fator, percentual } = usePromocao();
 
-  const opcoesImp = useMemo(() => {
-    const tabela = qty === 1000 && verniz === 'sim' ? CARTAO_PRECOS[1000].comVerniz! : CARTAO_PRECOS[qty].semVerniz;
-    return Object.keys(tabela);
-  }, [qty, verniz]);
+  const qtyOptions = QTY_OPTIONS.filter(q => IMPS.some(i => grupo?.preco(chave(q, i, 'nao')) != null || grupo?.preco(chave(q, i, 'sim')) != null));
+  const temVernizNaQtd = IMPS.some(i => grupo?.preco(chave(qty, i, 'sim')) != null);
+  const opcoesImp = useMemo(
+    () => IMPS.filter(i => grupo?.preco(chave(qty, i, verniz)) != null),
+    [grupo, qty, verniz],
+  );
 
   // Se a impressão escolhida não existir mais nessa combinação (ex: trocou
   // pra "com verniz" e não existe 4×1 com verniz), volta pra primeira válida.
@@ -38,16 +49,16 @@ export default function CartaoConfigurator({
     if (!temVerso) setArteVerso(null);
   }, [temVerso]);
 
-  const totalCheio = useMemo(() => {
-    const tabela = qty === 1000 && verniz === 'sim' ? CARTAO_PRECOS[1000].comVerniz! : CARTAO_PRECOS[qty].semVerniz;
-    return tabela[impAtual];
-  }, [qty, verniz, impAtual]);
+  const totalCheio = grupo?.preco(chave(qty, impAtual, verniz)) ?? 0;
   const total = totalCheio * fator;
 
   function pickQty(q: number) {
     setQty(q);
-    if (q !== 1000) setVerniz('nao');
+    if (!IMPS.some(i => grupo?.preco(chave(q, i, 'sim')) != null)) setVerniz('nao');
   }
+
+  // Sem o grupo no ERP (ou ainda carregando), a seção não aparece.
+  if (!grupo || opcoesImp.length === 0) return null;
 
   const mostrarArteFrente = arteFrente && ehImagem(arteFrente);
   const mostrarArteVerso = arteVerso && ehImagem(arteVerso);
@@ -58,7 +69,7 @@ export default function CartaoConfigurator({
         <div className="section-head reveal in">
           <div className="kicker">Monte o seu</div>
           <h2 className="serif">Cartão de visita</h2>
-          <p>Quantidade e impressão — toque no cartão ao lado pra ver o verso. Preço direto da tabela real do sistema.</p>
+          <p>Quantidade e impressão — toque no cartão ao lado pra ver o verso. Preço direto do sistema.</p>
         </div>
         <div className="configurator reveal in">
           <div className="cfg-preview">
@@ -102,7 +113,7 @@ export default function CartaoConfigurator({
             <div>
               <label className="field-label">Quantidade</label>
               <div className="swatch-row">
-                {QTY_OPTIONS.map(q => (
+                {qtyOptions.map(q => (
                   <button key={q} className={`swatch ${qty === q ? 'on' : ''}`} onClick={() => pickQty(q)}>
                     {q >= 1000 ? '1.000' : q} un
                   </button>
@@ -119,9 +130,9 @@ export default function CartaoConfigurator({
                 ))}
               </div>
             </div>
-            {qty === 1000 && (
+            {temVernizNaQtd && (
               <div>
-                <label className="field-label">Verniz (só disponível em 1.000 un)</label>
+                <label className="field-label">Verniz</label>
                 <div className="swatch-row">
                   <button className={`swatch ${verniz === 'nao' ? 'on' : ''}`} onClick={() => setVerniz('nao')}>Sem verniz</button>
                   <button className={`swatch ${verniz === 'sim' ? 'on' : ''}`} onClick={() => setVerniz('sim')}>Com verniz</button>
@@ -145,9 +156,9 @@ export default function CartaoConfigurator({
             <button
               className="btn-primary" style={{ width: '100%' }}
               onClick={() => {
-                const vernizTxt = qty === 1000 ? (verniz === 'sim' ? 'com verniz, ' : 'sem verniz, ') : '';
+                const vernizTxt = temVernizNaQtd ? (verniz === 'sim' ? 'com verniz, ' : 'sem verniz, ') : '';
                 const arte = arteFrente || arteVerso ? { frente: arteFrente ?? undefined, verso: arteVerso ?? undefined } : undefined;
-                onAdd(`Cartão de Visita ${qty}un, ${vernizTxt}${IMP_LABEL[impAtual]}`, total, 1, undefined, arte);
+                onAdd(`Cartão de Visita ${qty}un, ${vernizTxt}${IMP_LABEL[impAtual]}`, total, 1, undefined, arte, undefined, { erpId: grupo.erpIdPorCombo?.(chave(qty, impAtual, verniz)) });
                 setArteFrente(null);
                 setArteVerso(null);
               }}

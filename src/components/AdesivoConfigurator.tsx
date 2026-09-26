@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState, type RefObject } from 'react';
-import { ADESIVO_PRECOS as ADESIVO_PRECOS_FALLBACK, fmt } from '../data';
-import { getAdesivoPrecos, type AdesivoNomesErp } from '../services/productsService';
+import { useMemo, useState, type RefObject } from 'react';
+import { fmt, type MultiProduct } from '../data';
 import type { ErpLink } from '../context/CartContext';
 import { usePromocao } from '../context/PromocaoContext';
 import { ArteUpload, ArteGuides, ArteLegend, ehImagem, type Arte } from './ArtePreview';
@@ -12,9 +11,13 @@ type Acabamento = 'Recortado' | 'Refilado' | 'Laminado';
 export default function AdesivoConfigurator({
   onAdd,
   sectionRef,
+  grupos,
 }: {
   onAdd: (nome: string, preco: number, quantidade?: number, observacao?: string, arte?: { frente?: ArteAnexo; verso?: ArteAnexo } | null, imagem?: string, erp?: ErpLink) => void;
   sectionRef?: RefObject<HTMLElement | null>;
+  // Grupos "Adesivo UV" / "Adesivo Vinil" montados em useProdutos.ts a
+  // partir do ERP — preço por m² e id do ERP de cada acabamento vêm dali.
+  grupos: Partial<Record<Tipo, MultiProduct>>;
 }) {
   const [tipo, setTipo] = useState<Tipo>('UV');
   const [acab, setAcab] = useState<Acabamento>('Recortado');
@@ -22,12 +25,10 @@ export default function AdesivoConfigurator({
   const [alt, setAlt] = useState(1);
   const [arte, setArte] = useState<Arte | null>(null);
   const { fator, percentual } = usePromocao();
-  // Preço real do sistema — se a busca falhar, usa a tabela fixa como reserva.
-  const [precos, setPrecos] = useState(ADESIVO_PRECOS_FALLBACK);
-  const [nomesErp, setNomesErp] = useState<AdesivoNomesErp>({});
-  useEffect(() => {
-    getAdesivoPrecos().then(r => { setPrecos(r.precos); setNomesErp(r.nomes); }).catch(() => { /* mantém a tabela fixa (fallback) */ });
-  }, []);
+  const tiposDisponiveis = (['UV', 'Vinil'] as const).filter(t => grupos[t]);
+  const tipoAtual: Tipo = grupos[tipo] ? tipo : tiposDisponiveis[0] ?? 'UV';
+  const acabsDisponiveis = (['Recortado', 'Refilado', 'Laminado'] as const).filter(a => grupos[tipoAtual]?.preco({ acab: a }) != null);
+  const acabAtual: Acabamento = acabsDisponiveis.includes(acab) ? acab : acabsDisponiveis[0] ?? 'Recortado';
 
   // Preço direto por Largura × Altura (m²) — igual Banner/Lona, em vez do
   // cálculo antigo de encaixe na bobina (formato + tamanho em cm).
@@ -35,15 +36,18 @@ export default function AdesivoConfigurator({
     const larguraM = Math.max(0.1, larg);
     const alturaM = Math.max(0.1, alt);
     const m2 = larguraM * alturaM;
-    const precoM2 = precos[tipo][acab];
+    const precoM2 = grupos[tipoAtual]?.preco({ acab: acabAtual }) ?? 0;
     const totalCheio = m2 * precoM2;
     const total = totalCheio * fator;
     return { larguraM, alturaM, m2, precoM2, totalCheio, total };
-  }, [larg, alt, tipo, acab, precos, fator]);
+  }, [larg, alt, tipoAtual, acabAtual, grupos, fator]);
 
   // Proporção da prévia — não deixa ficar fininha/esticada demais quando a
   // medida real é bem desproporcional (ex.: 3m × 0,2m).
   const previewAspect = Math.min(3, Math.max(1 / 3, calc.larguraM / calc.alturaM));
+
+  // Sem os produtos de Adesivo no ERP (ou ainda carregando), a seção não aparece.
+  if (tiposDisponiveis.length === 0) return null;
 
   return (
     <section id="adesivos" className="band" ref={sectionRef}>
@@ -75,16 +79,16 @@ export default function AdesivoConfigurator({
             <div>
               <label className="field-label">Tipo</label>
               <div className="swatch-row">
-                {(['UV', 'Vinil'] as const).map(t => (
-                  <button key={t} className={`swatch ${tipo === t ? 'on' : ''}`} onClick={() => setTipo(t)}>{t}</button>
+                {tiposDisponiveis.map(t => (
+                  <button key={t} className={`swatch ${tipoAtual === t ? 'on' : ''}`} onClick={() => setTipo(t)}>{t}</button>
                 ))}
               </div>
             </div>
             <div>
               <label className="field-label">Acabamento</label>
               <div className="swatch-row">
-                {(['Recortado', 'Refilado', 'Laminado'] as const).map(a => (
-                  <button key={a} className={`swatch ${acab === a ? 'on' : ''}`} onClick={() => setAcab(a)}>{a}</button>
+                {acabsDisponiveis.map(a => (
+                  <button key={a} className={`swatch ${acabAtual === a ? 'on' : ''}`} onClick={() => setAcab(a)}>{a}</button>
                 ))}
               </div>
             </div>
@@ -115,9 +119,9 @@ export default function AdesivoConfigurator({
               <div className="meta"><span className="mono">{fmt(calc.precoM2)} / m²</span><br />Entrega em até 48h</div>
             </div>
             <div className="cfg-note">
-              Preço = largura × altura (m²) vezes o valor real por m² do Adesivo {tipo} {acab} no sistema.
+              Preço = largura × altura (m²) vezes o valor real por m² do Adesivo {tipoAtual} {acabAtual} no sistema.
             </div>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipo} ${acab} (${calc.larguraM.toFixed(2).replace('.', ',')}m × ${calc.alturaM.toFixed(2).replace('.', ',')}m)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined, undefined, { erpNome: nomesErp[tipo]?.[acab] ?? `Adesivo ${tipo} ${acab}`, m2: calc.m2 }); setArte(null); }}>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { onAdd(`Adesivo ${tipoAtual} ${acabAtual} (${calc.larguraM.toFixed(2).replace('.', ',')}m × ${calc.alturaM.toFixed(2).replace('.', ',')}m)`, calc.total, 1, undefined, arte ? { frente: arte } : undefined, undefined, { erpId: grupos[tipoAtual]?.erpIdPorCombo?.({ acab: acabAtual }), m2: calc.m2 }); setArte(null); }}>
               Adicionar ao pedido
             </button>
           </div>

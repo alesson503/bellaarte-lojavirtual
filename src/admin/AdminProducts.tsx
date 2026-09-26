@@ -6,7 +6,7 @@ import {
   listCatalogoFixoImagens, uploadImagemCatalogoFixo, removerImagemCatalogoFixo,
   type ErpProduto, type LojaProduto, type AdesivoCombo,
 } from '../services/productsService';
-import { fmt, MULTI, MEDIDA } from '../data';
+import { fmt, GRUPOS_CATALOGO } from '../data';
 import { imageToDataUrl } from '../lib/imageToDataUrl';
 
 export default function AdminProducts() {
@@ -261,11 +261,11 @@ function AdesivoStatusPanel() {
   );
 }
 
-// Panfletos, Wind Banner, Placa PS e Banner/Lona são definidos direto no
-// código (nome/preço/opções fixos) — não têm cadastro no banco, então não
-// aparecem na tabela "Produtos na vitrine" acima. Essa foto é opcional: sem
-// ela, o card continua mostrando o ícone da categoria, igual sempre foi.
-const PRODUTOS_CATALOGO_FIXO = [...MULTI, ...MEDIDA];
+// Panfletos, Wind Banner, Placa PS, Banner/Lona… vêm do ERP como vários
+// itens soltos e a loja junta num card só (ver useProdutos.ts). Essa é a
+// foto de capa do card do grupo — opcional: sem ela, usa a foto do
+// primeiro item do ERP, ou o ícone da categoria.
+const PRODUTOS_CATALOGO_FIXO = GRUPOS_CATALOGO;
 
 function ImagensCatalogoFixoPanel() {
   const [imagens, setImagens] = useState<Record<string, string> | null>(null);

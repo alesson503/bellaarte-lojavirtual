@@ -77,7 +77,7 @@ export default function ProductCard({
     unidade = produto.unidade;
   } else if (produto.tipo === 'medida') {
     precoExibido = produto.precoM2 * fator;
-    unidade = 'm²';
+    unidade = produto.linear ? 'm' : 'm²';
   } else {
     precoExibido = produto.preco;
     unidade = produto.unidade;

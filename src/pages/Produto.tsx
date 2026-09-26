@@ -98,7 +98,12 @@ export default function Produto() {
   const precoMultiFinal = produto.tipo === 'multi' && precoMultiCheio != null
     ? (produto.porM2 ? precoMultiCheio * m2 : precoMultiCheio)
     : null;
-  const precoMedidaCheio = produto.tipo === 'medida' ? m2 * produto.precoM2 : null;
+  // Produto por metro linear (ex.: DTF Têxtil) só pede o comprimento —
+  // `larg` faz esse papel, e a "área" vira os metros.
+  const linear = produto.tipo === 'medida' && !!produto.linear;
+  const medidaQtd = linear ? Math.max(0.1, larg) : m2;
+  const unidadeMedida = linear ? 'm' : 'm²';
+  const precoMedidaCheio = produto.tipo === 'medida' ? medidaQtd * produto.precoM2 : null;
 
   const preco =
     produto.tipo === 'simples' ? produto.preco :
@@ -108,12 +113,13 @@ export default function Produto() {
   const nomeParaPedido =
     produto.tipo === 'simples' ? (produto.cores?.length && corSelecionada ? `${produto.nome} (${corSelecionada})` : produto.nome) :
     produto.tipo === 'multi' ? `${produto.nome} (${produto.dims.map(d => selMultiAtual[d.key]).join(' · ')}${produto.porM2 ? ` · ${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m` : ''})` :
+    linear ? `${produto.nome} (${medidaQtd.toFixed(2).replace('.', ',')}m)` :
     `${produto.nome} (${larg.toFixed(2).replace('.', ',')}m × ${alt.toFixed(2).replace('.', ',')}m = ${m2.toFixed(2).replace('.', ',')}m²)`;
 
   const qtdPedido = produto.tipo === 'simples' ? quantidade : 1;
   const erp = {
-    erpId: produto.tipo === 'simples' ? produto.erpId : produto.tipo === 'multi' ? produto.erpIdPorCombo?.(selMultiAtual) : undefined,
-    m2: produto.tipo === 'medida' || (produto.tipo === 'multi' && produto.porM2) ? m2 : undefined,
+    erpId: produto.tipo === 'simples' || produto.tipo === 'medida' ? produto.erpId : produto.erpIdPorCombo?.(selMultiAtual),
+    m2: produto.tipo === 'medida' ? medidaQtd : produto.tipo === 'multi' && produto.porM2 ? m2 : undefined,
   };
   const podeAdicionar = preco != null;
   const mensagemWhats = podeAdicionar
@@ -231,9 +237,17 @@ export default function Produto() {
               </>
             ) : produto.tipo === 'medida' ? (
               <>
-                <p className="mt-3 text-sm text-ink-muted">a partir de <span className="font-display text-lg font-extrabold text-ink">{fmt(produto.precoM2 * fator)}</span> / m²</p>
+                <p className="mt-3 text-sm text-ink-muted">a partir de <span className="font-display text-lg font-extrabold text-ink">{fmt(produto.precoM2 * fator)}</span> / {unidadeMedida}</p>
                 <div className="mt-6">
-                  <p className="text-sm text-ink-muted">Preço por m²: <span className="font-semibold text-ink">{fmt(produto.precoM2)}</span></p>
+                  <p className="text-sm text-ink-muted">Preço por {linear ? 'metro' : 'm²'}: <span className="font-semibold text-ink">{fmt(produto.precoM2)}</span></p>
+                  {linear ? (
+                    <div className="mt-4 max-w-[10rem]">
+                      <label className="text-sm font-semibold text-ink-soft">Comprimento (m)
+                        <input type="number" min={0.1} step={0.1} value={larg} onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                          className="mt-1 w-full rounded-xl border border-cream-200 px-3 py-2 text-ink outline-none focus:border-rose" />
+                      </label>
+                    </div>
+                  ) : (<>
                   <div className="mt-4 grid max-w-xs grid-cols-2 gap-3">
                     <label className="text-sm font-semibold text-ink-soft">Largura (m)
                       <input type="number" min={0.1} step={0.1} value={larg} onChange={e => setLarg(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
@@ -245,6 +259,7 @@ export default function Produto() {
                     </label>
                   </div>
                   <p className="mt-3 text-sm text-ink-muted">{larg.toFixed(2).replace('.', ',')} × {alt.toFixed(2).replace('.', ',')} m = {m2.toFixed(2).replace('.', ',')} m²</p>
+                  </>)}
                   <div className="mt-5 border-t border-cream-200 pt-5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Valor</p>
                     <p className="font-display text-3xl font-extrabold text-ink">

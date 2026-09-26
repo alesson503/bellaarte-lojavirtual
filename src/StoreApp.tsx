@@ -12,6 +12,7 @@ import { useCart } from './context/CartContext';
 import { useWhatsapp } from './context/WhatsappContext';
 import { useSobreNos } from './context/SobreNosContext';
 import { useProdutos } from './hooks/useProdutos';
+import type { MultiProduct } from './data';
 import { whatsappLink } from './config';
 import heroCanecas from './assets/hero-canecas.jpg';
 
@@ -40,6 +41,7 @@ export default function StoreApp() {
 
   const categorias = useMemo(() => Array.from(new Set(catalogo.map(p => p.categoria))).sort(), [catalogo]);
   const maisPedidos = useMemo(() => catalogo.slice(0, 8), [catalogo]);
+  const grupoPorId = (id: string) => catalogo.find((p): p is MultiProduct => p.tipo === 'multi' && p.id === id);
 
   const adesivosRef = useRef<HTMLElement>(null);
   const cartoesRef = useRef<HTMLElement>(null);
@@ -250,8 +252,8 @@ export default function StoreApp() {
 
       {page === 'personalize' && (
         <>
-          <AdesivoConfigurator onAdd={addToCart} sectionRef={adesivosRef} />
-          <CartaoConfigurator onAdd={addToCart} sectionRef={cartoesRef} />
+          <AdesivoConfigurator onAdd={addToCart} sectionRef={adesivosRef} grupos={{ UV: grupoPorId('adesivo-uv'), Vinil: grupoPorId('adesivo-vinil') }} />
+          <CartaoConfigurator onAdd={addToCart} sectionRef={cartoesRef} grupo={grupoPorId('cartao-visita')} />
         </>
       )}
 
