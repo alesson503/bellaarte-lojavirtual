@@ -58,12 +58,12 @@ export const MULTI: MultiProduct[] = [
   {
     tipo: 'multi', id: 'windbanner', nome: 'Wind Banner', categoria: 'Banner',
     dims: [
-      { key: 'tam', label: 'Tamanho', options: ['P', 'G', 'GG'] },
+      { key: 'tam', label: 'Tamanho', options: ['P', 'M', 'G', 'GG'] },
       { key: 'bk', label: 'Blackout', options: ['Sem', 'Com'] },
     ],
     preco(v) {
       const t: Record<string, Record<string, number>> = {
-        P: { Sem: 260, Com: 290 }, G: { Sem: 294, Com: 324 }, GG: { Sem: 334, Com: 364 },
+        P: { Sem: 260, Com: 290 }, M: { Sem: 274, Com: 304 }, G: { Sem: 294, Com: 324 }, GG: { Sem: 334, Com: 364 },
       };
       return t[v.tam][v.bk];
     },
