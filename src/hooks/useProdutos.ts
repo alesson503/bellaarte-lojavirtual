@@ -169,8 +169,20 @@ function paraMedida(p: SimpleProduct): MedidaProduct | null {
 }
 
 // Produtos importados do fornecedor no ERP já vêm marcados com o grupo
-// ("Adesivo em Vinil 5x5") e a opção ("50 un") — viram 1 produto com seletor
-// de Quantidade, sem precisar de regra de nome como os GRUPOS acima.
+// ("Adesivo em Vinil 5x5") e a opção — "50 un" (só quantidade) ou
+// "Tiragem: 1.000 un | Acabamento: Furo de 3mm" (várias). Viram 1 produto
+// com um seletor por opção, sem precisar de regra de nome como os GRUPOS
+// acima. Cada combinação é um produto próprio no ERP, com o custo exato.
+function lerOpcao(opcao: string): Record<string, string> {
+  if (!opcao.includes(':')) return { Quantidade: opcao };
+  const out: Record<string, string> = {};
+  for (const par of opcao.split(' | ')) {
+    const i = par.indexOf(':');
+    if (i > 0) out[par.slice(0, i).trim()] = par.slice(i + 1).trim();
+  }
+  return out;
+}
+
 function agruparImportados(produtos: SimpleProduct[]): { grupos: MultiProduct[]; restantes: SimpleProduct[] } {
   const porGrupo = new Map<string, SimpleProduct[]>();
   const restantes: SimpleProduct[] = [];
@@ -181,8 +193,19 @@ function agruparImportados(produtos: SimpleProduct[]): { grupos: MultiProduct[];
   const numero = (o: string) => Number(o.replace(/\D/g, '')) || 0;
   const grupos: MultiProduct[] = [];
   for (const [nome, itens] of porGrupo) {
-    const opcoes = [...new Set(itens.map(i => i.opcao!))].sort((a, b) => numero(a) - numero(b));
-    const porOpcao = new Map(itens.map(i => [i.opcao!, i]));
+    const lidos = itens.map(i => ({ item: i, valores: lerOpcao(i.opcao!) }));
+    const labels = [...new Set(lidos.flatMap(l => Object.keys(l.valores)))];
+    const dims = labels.map(label => {
+      const valores = [...new Set(lidos.map(l => l.valores[label]).filter(Boolean))];
+      const menorPreco = (v: string) => Math.min(...lidos.filter(l => l.valores[label] === v).map(l => l.item.preco));
+      // Quantidade/Tiragem em ordem crescente; "Sem acabamento" primeiro; o
+      // resto do mais barato pro mais caro.
+      valores.sort((a, b) => /quantidade|tiragem/i.test(label) ? numero(a) - numero(b)
+        : a === 'Sem acabamento' ? -1 : b === 'Sem acabamento' ? 1 : menorPreco(a) - menorPreco(b));
+      return { key: slug(label) || 'opcao', label, options: valores };
+    });
+    const chave = (v: Record<string, string>) => dims.map(d => v[d.key] ?? '').join('|');
+    const porCombo = new Map(lidos.map(l => [dims.map(d => l.valores[d.label] ?? '').join('|'), l.item]));
     const primeiro = itens.find(i => i.imagem) ?? itens[0];
     grupos.push({
       tipo: 'multi',
@@ -190,10 +213,10 @@ function agruparImportados(produtos: SimpleProduct[]): { grupos: MultiProduct[];
       nome,
       categoria: itens[0].categoria,
       imagem: primeiro.imagem,
-      dims: [{ key: 'qtd', label: 'Quantidade', options: opcoes }],
-      preco: v => { const i = porOpcao.get(v.qtd); return i ? (i.precoOriginal ?? i.preco) : null; },
-      fotoPorCombo: v => porOpcao.get(v.qtd)?.imagem,
-      erpIdPorCombo: v => porOpcao.get(v.qtd)?.erpId,
+      dims,
+      preco: v => { const i = porCombo.get(chave(v)); return i ? (i.precoOriginal ?? i.preco) : null; },
+      fotoPorCombo: v => porCombo.get(chave(v))?.imagem,
+      erpIdPorCombo: v => porCombo.get(chave(v))?.erpId,
       especificacoes: primeiro.especificacoes,
     });
   }
