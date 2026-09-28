@@ -53,6 +53,19 @@ async function syncProdutosFromErp() {
     );
   }
 
+  // Produto importado do fornecedor: escreve a descrição e as especificações
+  // que vieram do ERP nos campos da própria loja — uma vez só. Campo que o
+  // admin já tinha preenchido não é trocado; depois disso ele edita ou apaga
+  // à vontade (info_erp_copiada = true e a sincronização não mexe mais).
+  await pool.query(
+    `UPDATE produtos SET
+       descricao = CASE WHEN COALESCE(descricao, '') = '' THEN erp_descricao ELSE descricao END,
+       especificacoes = CASE WHEN especificacoes = '[]'::jsonb THEN erp_especificacoes ELSE especificacoes END,
+       info_erp_copiada = true, atualizado_em = now()
+     WHERE origem = 'erp' AND info_erp_copiada = false
+       AND (COALESCE(erp_descricao, '') <> '' OR erp_especificacoes <> '[]'::jsonb)`
+  );
+
   // 2) Preço do configurador de Adesivo — casa por nome exato.
   const { rows: combos } = await pool.query('SELECT material, acabamento, erp_nome_esperado FROM adesivo_precos');
   for (const combo of combos) {

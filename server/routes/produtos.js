@@ -20,7 +20,13 @@ function sanitizarCores(cores) {
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, desconto_percentual, descricao, cores, especificacoes, erp_grupo, erp_opcao, erp_especificacoes, erp_descricao FROM produtos WHERE ativo = true AND fora_do_erp = false ORDER BY categoria, nome'
+      // Depois que a info do fornecedor foi copiada pros campos da loja
+      // (info_erp_copiada), só vale o que está nos campos — se o admin apagou,
+      // fica apagado (não volta o texto do fornecedor por baixo).
+      `SELECT id, nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, desconto_percentual, descricao, cores, especificacoes, erp_grupo, erp_opcao,
+              CASE WHEN info_erp_copiada THEN '[]'::jsonb ELSE erp_especificacoes END AS erp_especificacoes,
+              CASE WHEN info_erp_copiada THEN NULL ELSE erp_descricao END AS erp_descricao
+       FROM produtos WHERE ativo = true AND fora_do_erp = false ORDER BY categoria, nome`
     );
     const { rows: promoRows } = await pool.query(
       `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes
