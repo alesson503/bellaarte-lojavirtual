@@ -6,17 +6,20 @@ import App from './App.tsx'
 import { AuthProvider } from './auth/AuthContext'
 import { SiteSettingsProvider } from './context/SiteSettingsContext'
 import { PromocaoProvider } from './context/PromocaoContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <SiteSettingsProvider>
-        <AuthProvider>
-          <PromocaoProvider>
-            <App />
-          </PromocaoProvider>
-        </AuthProvider>
-      </SiteSettingsProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <SiteSettingsProvider>
+          <AuthProvider>
+            <PromocaoProvider>
+              <App />
+            </PromocaoProvider>
+          </AuthProvider>
+        </SiteSettingsProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )
