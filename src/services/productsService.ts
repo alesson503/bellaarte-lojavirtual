@@ -42,6 +42,10 @@ export interface LojaProduto {
   descricao: string | null;
   cores: { nome: string; foto: string | null }[];
   especificacoes: { chave: string; valor: string }[];
+  // Produto importado do fornecedor no ERP (ver hooks/useProdutos.ts).
+  erp_grupo?: string | null;
+  erp_opcao?: string | null;
+  erp_especificacoes?: { chave: string; valor: string }[];
 }
 
 export async function listLojaProducts(): Promise<LojaProduto[]> {

@@ -168,6 +168,38 @@ function paraMedida(p: SimpleProduct): MedidaProduct | null {
   };
 }
 
+// Produtos importados do fornecedor no ERP já vêm marcados com o grupo
+// ("Adesivo em Vinil 5x5") e a opção ("50 un") — viram 1 produto com seletor
+// de Quantidade, sem precisar de regra de nome como os GRUPOS acima.
+function agruparImportados(produtos: SimpleProduct[]): { grupos: MultiProduct[]; restantes: SimpleProduct[] } {
+  const porGrupo = new Map<string, SimpleProduct[]>();
+  const restantes: SimpleProduct[] = [];
+  for (const p of produtos) {
+    if (p.grupo && p.opcao) (porGrupo.get(p.grupo) ?? porGrupo.set(p.grupo, []).get(p.grupo)!).push(p);
+    else restantes.push(p);
+  }
+  const numero = (o: string) => Number(o.replace(/\D/g, '')) || 0;
+  const grupos: MultiProduct[] = [];
+  for (const [nome, itens] of porGrupo) {
+    const opcoes = [...new Set(itens.map(i => i.opcao!))].sort((a, b) => numero(a) - numero(b));
+    const porOpcao = new Map(itens.map(i => [i.opcao!, i]));
+    const primeiro = itens.find(i => i.imagem) ?? itens[0];
+    grupos.push({
+      tipo: 'multi',
+      id: 'imp-' + slug(nome),
+      nome,
+      categoria: itens[0].categoria,
+      imagem: primeiro.imagem,
+      dims: [{ key: 'qtd', label: 'Quantidade', options: opcoes }],
+      preco: v => { const i = porOpcao.get(v.qtd); return i ? (i.precoOriginal ?? i.preco) : null; },
+      fotoPorCombo: v => porOpcao.get(v.qtd)?.imagem,
+      erpIdPorCombo: v => porOpcao.get(v.qtd)?.erpId,
+      especificacoes: primeiro.especificacoes,
+    });
+  }
+  return { grupos, restantes };
+}
+
 // Montado em cima da lista que o ERP manda pra loja (sincronizada no
 // servidor da loja a cada 30min). Sem fallback fixo: se a busca falhar, a
 // vitrine fica vazia em vez de mostrar preço desatualizado.
@@ -190,7 +222,10 @@ export function useProdutos() {
           descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
           descricao: p.descricao ?? undefined,
           cores: p.cores?.length ? p.cores : undefined,
-          especificacoes: p.especificacoes?.length ? p.especificacoes : undefined,
+          // Especificação escrita na loja vale mais que a que veio do fornecedor.
+          especificacoes: p.especificacoes?.length ? p.especificacoes : p.erp_especificacoes?.length ? p.erp_especificacoes : undefined,
+          grupo: p.erp_grupo || undefined,
+          opcao: p.erp_opcao || undefined,
         })));
       })
       .catch(() => { /* vitrine fica vazia */ });
@@ -201,8 +236,9 @@ export function useProdutos() {
   }, []);
 
   const catalogo: Produto[] = useMemo(() => {
-    let restantes = simples;
-    const grupos: MultiProduct[] = [];
+    const { grupos: importados, restantes: semGrupo } = agruparImportados(simples);
+    let restantes = semGrupo;
+    const grupos: MultiProduct[] = [...importados];
     for (const g of GRUPOS) {
       const r = agruparPorNome(restantes, g.regex, g.extrair, g.config);
       restantes = r.restantes;

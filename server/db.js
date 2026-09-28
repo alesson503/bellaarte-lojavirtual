@@ -166,6 +166,16 @@ async function migrate() {
     );
   `);
 
+  // Produto importado do fornecedor no ERP: as quantidades (1 produto cada
+  // lá) viram 1 produto só aqui, agrupado por erp_grupo, com erp_opcao
+  // ("50 un") de seletor. erp_especificacoes vem do fornecedor (material,
+  // cores…) e aparece quando a loja não tem especificações próprias.
+  await pool.query(`
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_grupo TEXT;
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_opcao TEXT;
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_especificacoes JSONB NOT NULL DEFAULT '[]';
+  `);
+
   // "Visível na loja" (ativo) é escolha do admin; "saiu do ERP" é outra
   // coisa (o produto foi desativado/apagado lá). Antes a sincronização usava
   // `ativo` pras duas e religava a cada 30min o que o admin tinha escondido.

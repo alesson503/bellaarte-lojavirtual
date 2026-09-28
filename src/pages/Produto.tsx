@@ -179,7 +179,7 @@ export default function Produto() {
             <span className="text-sm font-semibold uppercase tracking-wide text-ink-muted">{produto.categoria}</span>
             <h1 className="mt-2 font-display text-3xl font-extrabold text-ink md:text-4xl">{produto.nome}</h1>
 
-            {produto.tipo === 'simples' && produto.especificacoes?.length ? (
+            {(produto.tipo === 'simples' || produto.tipo === 'multi') && produto.especificacoes?.length ? (
               <ul className="mt-4 space-y-1">
                 {produto.especificacoes.map((e, i) => (
                   <li key={i} className="text-sm text-ink-soft"><span className="mr-1 text-rose">›</span><strong>{e.chave}:</strong> {e.valor}</li>

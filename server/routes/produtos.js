@@ -20,7 +20,7 @@ function sanitizarCores(cores) {
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, desconto_percentual, descricao, cores, especificacoes FROM produtos WHERE ativo = true AND fora_do_erp = false ORDER BY categoria, nome'
+      'SELECT id, nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, desconto_percentual, descricao, cores, especificacoes, erp_grupo, erp_opcao, erp_especificacoes FROM produtos WHERE ativo = true AND fora_do_erp = false ORDER BY categoria, nome'
     );
     const { rows: promoRows } = await pool.query(
       `SELECT COALESCE(MAX(percentual), 0) AS percentual FROM promocoes

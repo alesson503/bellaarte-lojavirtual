@@ -29,6 +29,9 @@ export interface MultiProduct {
   // Id do produto no ERP de cada combinação (só nos grupos montados a
   // partir de produtos do ERP) — o ERP usa pra achar o custo.
   erpIdPorCombo?: (v: Record<string, string>) => string | undefined;
+  // Ficha do produto (material, cores, tamanho…) — hoje só nos grupos de
+  // produtos importados do fornecedor.
+  especificacoes?: { chave: string; valor: string }[];
 }
 
 export interface MedidaProduct {
@@ -57,6 +60,9 @@ export interface SimpleProduct {
   descricao?: string;
   cores?: { nome: string; foto: string | null }[];
   especificacoes?: { chave: string; valor: string }[];
+  // Importado do fornecedor: nome do grupo e a opção ("50 un") desse item.
+  grupo?: string;
+  opcao?: string;
 }
 
 export type Produto = MultiProduct | MedidaProduct | SimpleProduct;
