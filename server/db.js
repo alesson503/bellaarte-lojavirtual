@@ -165,6 +165,21 @@ async function migrate() {
       criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+
+  // "Visível na loja" (ativo) é escolha do admin; "saiu do ERP" é outra
+  // coisa (o produto foi desativado/apagado lá). Antes a sincronização usava
+  // `ativo` pras duas e religava a cada 30min o que o admin tinha escondido.
+  // Na primeira vez: quem estava com ativo=false tinha saído do ERP (a
+  // sincronização religava todo o resto), então vira fora_do_erp=true.
+  const { rows: temColuna } = await pool.query(
+    "SELECT 1 FROM information_schema.columns WHERE table_name = 'produtos' AND column_name = 'fora_do_erp'"
+  );
+  if (!temColuna.length) {
+    await pool.query(`
+      ALTER TABLE produtos ADD COLUMN fora_do_erp BOOLEAN NOT NULL DEFAULT false;
+      UPDATE produtos SET fora_do_erp = true, ativo = true WHERE origem = 'erp' AND ativo = false;
+    `);
+  }
 }
 
 module.exports = { pool, migrate };

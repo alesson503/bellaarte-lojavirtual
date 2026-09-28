@@ -1,9 +1,10 @@
-// Configurações visuais do site, editáveis pelo admin (/admin/configuracoes).
-//
-// Mesmo esquema local/mock do authService e ordersService: fica salvo no
-// localStorage DESTE navegador. Isso significa que hoje é só pra você
-// testar a tela — quando integrar com um sistema real, isso devia virar
-// uma configuração salva no backend e servida pra todo mundo.
+// Configurações visuais do site (textos da home, cores, logo, fotos) —
+// salvas no servidor da loja (GET/PUT /api/configuracoes/aparencia) e
+// editadas pela Loja Virtual do ERP ou pelo painel admin daqui. O
+// localStorage guarda só uma cópia pra pintar a página rápido enquanto a
+// versão do servidor chega.
+import { API_URL } from '../config';
+import { authHeader } from '../auth/authService';
 
 export interface SiteSettings {
   heroEyebrow: string;
@@ -52,9 +53,31 @@ export function getSettings(): SiteSettings {
 }
 
 export function saveSettings(settings: SiteSettings) {
-  localStorage.setItem(KEY, JSON.stringify(settings));
+  try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch { /* cópia local é só conveniência */ }
 }
 
 export function resetSettings() {
-  localStorage.removeItem(KEY);
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+}
+
+export async function buscarAparenciaServidor(): Promise<SiteSettings> {
+  const res = await fetch(`${API_URL}/api/configuracoes/aparencia`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao buscar a aparência.');
+  return { ...DEFAULT_SETTINGS, ...(data.aparencia || {}) };
+}
+
+// Salva só o que difere do padrão ({} = tudo padrão).
+export async function salvarAparenciaServidor(settings: SiteSettings): Promise<void> {
+  const diff: Partial<SiteSettings> = {};
+  for (const k of Object.keys(DEFAULT_SETTINGS) as (keyof SiteSettings)[]) {
+    if (JSON.stringify(settings[k]) !== JSON.stringify(DEFAULT_SETTINGS[k])) (diff as Record<string, unknown>)[k] = settings[k];
+  }
+  const res = await fetch(`${API_URL}/api/configuracoes/aparencia`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ aparencia: diff }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro ao salvar a aparência.');
 }

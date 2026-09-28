@@ -29,7 +29,7 @@ async function syncProdutosFromErp() {
        VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END)
        ON CONFLICT (erp_id) DO UPDATE SET
          nome = EXCLUDED.nome, categoria = EXCLUDED.categoria, preco = EXCLUDED.preco,
-         unidade = EXCLUDED.unidade, ativo = true, atualizado_em = now(),
+         unidade = EXCLUDED.unidade, fora_do_erp = false, atualizado_em = now(),
          imagem_url = CASE WHEN produtos.imagem_origem = 'manual' THEN produtos.imagem_url ELSE EXCLUDED.imagem_url END,
          imagem_origem = CASE
            WHEN produtos.imagem_origem = 'manual' THEN 'manual'
@@ -41,7 +41,9 @@ async function syncProdutosFromErp() {
   }
   if (vistosErpIds.length) {
     await pool.query(
-      `UPDATE produtos SET ativo = false, atualizado_em = now()
+      // Saiu do ERP: some da loja, mas sem mexer no "Visível na loja" que o
+      // admin escolheu (se voltar pro ERP, volta do jeito que estava).
+      `UPDATE produtos SET fora_do_erp = true, atualizado_em = now()
        WHERE origem = 'erp' AND erp_id IS NOT NULL AND NOT (erp_id = ANY($1::text[]))`,
       [vistosErpIds]
     );

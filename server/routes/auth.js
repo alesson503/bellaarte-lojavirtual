@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('../db');
-const { signToken, authMiddleware, adminOnly } = require('../middleware/auth');
+const { signToken, authMiddleware, adminOnly, adminAntigoLigado, MSG_ADMIN_DESLIGADO } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -51,6 +51,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user) return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
     const ok = await bcrypt.compare(senha, user.senha_hash);
     if (!ok) return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+    // Painel admin antigo desligado pelo ERP: conta de admin não entra mais
+    // aqui (cliente da loja continua entrando normal).
+    if (user.role === 'admin' && !(await adminAntigoLigado())) return res.status(403).json({ error: MSG_ADMIN_DESLIGADO });
     res.json({ token: signToken(user), user: publicUser(user) });
   } catch (e) {
     console.error(e);

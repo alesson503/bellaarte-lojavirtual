@@ -6,11 +6,10 @@ import heroDefault from '../assets/hero-canecas.jpg';
 
 // Reunido aqui (era espalhado em "Configurações"): tudo que muda o visual
 // da loja — textos da home, cores, logo, foto do banner, fundo do site e
-// as fotos que rodam no carrossel. Igual já era antes, essa parte fica
-// salva só neste navegador (prévia de teste) — só WhatsApp, senha e
-// "Sobre Nós" (na aba Configurações) valem pra loja inteira de verdade.
+// as fotos que rodam no carrossel. Salvo no servidor da loja (ver
+// SiteSettingsContext), vale pra todo mundo.
 export default function AdminAparencia() {
-  const { settings, update, reset } = useSiteSettings();
+  const { settings, update, reset, erroSalvar } = useSiteSettings();
   const [erro, setErro] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
@@ -67,12 +66,13 @@ export default function AdminAparencia() {
       <div className="mb-5 rounded-2xl border border-cream-200 bg-white p-5">
         <h2 className="font-display text-lg font-bold text-ink">Aparência</h2>
         <p className="mt-1 text-sm text-ink-muted">
-          Textos, cores, logo e fotos da loja. Fica salvo só neste navegador (prévia de teste) — abrir a loja em
-          outro computador não mostra essas mudanças lá.
+          Textos, cores, logo e fotos da loja. Salva sozinho e já vale pra todo mundo que abre a loja
+          (também dá pra mudar pela Loja Virtual, no ERP).
         </p>
       </div>
 
-      {erro && <p className="mb-5 rounded-2xl border border-rose bg-rose-50 p-4 text-sm font-semibold text-rose">{erro}</p>}
+      {erroSalvar && <p className="mb-5 rounded-2xl border border-rose bg-rose-50 p-4 text-sm font-semibold text-rose">{erroSalvar}</p>}
+      {erro &&<p className="mb-5 rounded-2xl border border-rose bg-rose-50 p-4 text-sm font-semibold text-rose">{erro}</p>}
 
       <div className="mb-5 rounded-2xl border border-cream-200 bg-white p-5">
         <h2 className="font-display text-lg font-bold text-ink">Textos da home</h2>

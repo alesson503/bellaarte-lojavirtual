@@ -11,7 +11,7 @@ export default function AdminSiteSettings() {
         <h2 className="font-display text-lg font-bold text-ink">Configurações</h2>
         <p className="mt-1 text-sm text-ink-muted">
           WhatsApp, senha e o texto da página "Sobre Nós" — essas valem pra loja inteira, pra qualquer visitante.
-          Textos da home, cores, logo e fotos ficam na aba <b>Aparência</b> (essa parte é só prévia, salva no navegador).
+          Textos da home, cores, logo e fotos ficam na aba <b>Aparência</b>.
         </p>
       </div>
 
