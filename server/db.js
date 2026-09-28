@@ -164,6 +164,19 @@ async function migrate() {
       ativo       BOOLEAN NOT NULL DEFAULT true,
       criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+
+    -- Histórico de erros que quebraram uma tela da loja (pego pelo
+    -- ErrorBoundary do front-end) — pra dar pra investigar depois mesmo se
+    -- o dono não conseguir copiar o erro na hora. Guarda só o essencial,
+    -- sem dado de cliente.
+    CREATE TABLE IF NOT EXISTS erros_frontend (
+      id          SERIAL PRIMARY KEY,
+      mensagem    TEXT NOT NULL,
+      pilha       TEXT,
+      url         TEXT,
+      user_agent  TEXT,
+      criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
   `);
 
   // Produto importado do fornecedor no ERP: as quantidades (1 produto cada

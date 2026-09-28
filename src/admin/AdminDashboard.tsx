@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listOrders, type Order } from '../services/ordersService';
 import { listCustomers } from '../auth/authService';
+import { listarErros, type ErroFrontend } from '../services/errosService';
 import { fmt } from '../data';
 
 export default function AdminDashboard() {
@@ -66,6 +67,49 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <ErrosRecentesPanel />
     </>
+  );
+}
+
+// Técnico, discreto — só aparece quando existe algo pra mostrar. Alimentado
+// sozinho pela tela de erro (ErrorBoundary) toda vez que alguma página trava.
+function ErrosRecentesPanel() {
+  const [erros, setErros] = useState<ErroFrontend[] | null>(null);
+  const [aberto, setAberto] = useState<number | null>(null);
+
+  useEffect(() => { listarErros().then(setErros).catch(() => setErros([])); }, []);
+
+  if (!erros || erros.length === 0) return null;
+
+  return (
+    <div className="mt-6 rounded-2xl border border-cream-200 bg-white p-5">
+      <h2 className="font-display text-lg font-bold text-ink">Erros recentes do site (técnico)</h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        Toda vez que uma página trava e aparece a tela de "Ops, algo deu errado", fica registrado aqui sozinho.
+        Se acontecer de novo, clica num item e manda print pro suporte.
+      </p>
+      <div className="mt-4 divide-y divide-cream-100">
+        {erros.map(e => (
+          <div key={e.id} className="py-3">
+            <button onClick={() => setAberto(a => (a === e.id ? null : e.id))} className="flex w-full items-start justify-between gap-3 text-left">
+              <div>
+                <p className="text-sm font-semibold text-ink">{e.mensagem.split('\n')[0]}</p>
+                <p className="mt-0.5 text-xs text-ink-muted">{new Date(e.criado_em).toLocaleString('pt-BR')} — {e.url}</p>
+              </div>
+              <span className="shrink-0 text-ink-muted">{aberto === e.id ? '▲' : '▼'}</span>
+            </button>
+            {aberto === e.id && (
+              <pre className="mt-2 overflow-x-auto rounded-xl bg-cream-100 p-3 text-xs text-ink-soft whitespace-pre-wrap">
+                {e.mensagem}
+                {e.pilha ? `\n\n${e.pilha}` : ''}
+                {e.user_agent ? `\n\nNavegador: ${e.user_agent}` : ''}
+              </pre>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

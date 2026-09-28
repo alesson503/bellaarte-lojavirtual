@@ -1,22 +1,29 @@
 import { Component, type ReactNode } from 'react';
+import { reportarErro } from '../services/errosService';
 
 // Rede de segurança: se algum erro escapar de qualquer tela (produto com
 // dado inesperado, falha de rede no meio de um clique etc.), sem isso o
 // React desmonta o site inteiro e fica tudo branco, sem nenhuma mensagem —
 // exatamente o "some tudo" que o dono relatou. Com isso, aparece uma tela
 // de desculpa com botão pra voltar, em vez do branco.
+//
+// Sem um serviço de log ligado, o único jeito de eu ver o erro de verdade
+// é o dono copiar e me mandar — por isso o botão "Copiar detalhes técnicos"
+// (junta mensagem do erro + página + hora num texto só, pronto pra colar).
 interface Props {
   children: ReactNode;
 }
 
 interface State {
   erro: Error | null;
+  pilha: string;
+  copiado: boolean;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
-  state: State = { erro: null };
+  state: State = { erro: null, pilha: '', copiado: false };
 
-  static getDerivedStateFromError(erro: Error): State {
+  static getDerivedStateFromError(erro: Error): Partial<State> {
     return { erro };
   }
 
@@ -24,10 +31,28 @@ export default class ErrorBoundary extends Component<Props, State> {
     // Fica só no console — sem um serviço de log configurado, é o que dá
     // pra fazer hoje sem mexer no back-end.
     console.error('Erro não tratado na loja:', erro, info.componentStack);
+    this.setState({ pilha: info.componentStack });
+    reportarErro(erro.message + (erro.stack ? `\n${erro.stack}` : ''), info.componentStack, window.location.href);
   }
+
+  copiarDetalhes = () => {
+    const { erro, pilha } = this.state;
+    const texto = [
+      `Página: ${window.location.href}`,
+      `Hora: ${new Date().toLocaleString('pt-BR')}`,
+      `Erro: ${erro?.message}`,
+      erro?.stack ? `\n${erro.stack}` : '',
+      pilha ? `\nComponentes:${pilha}` : '',
+    ].join('\n');
+    navigator.clipboard?.writeText(texto).then(
+      () => this.setState({ copiado: true }),
+      () => {},
+    );
+  };
 
   render() {
     if (this.state.erro) {
+      const { copiado } = this.state;
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-cream-50 px-6 text-center">
           <span className="text-5xl">😥</span>
@@ -49,6 +74,9 @@ export default class ErrorBoundary extends Component<Props, State> {
               Voltar pro início
             </a>
           </div>
+          <button onClick={this.copiarDetalhes} className="mt-3 text-xs font-semibold text-ink-muted underline hover:text-rose">
+            {copiado ? '✓ Copiado — pode colar pro suporte' : 'Copiar detalhes técnicos (pra mandar pro suporte)'}
+          </button>
         </div>
       );
     }
