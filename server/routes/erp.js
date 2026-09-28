@@ -29,6 +29,9 @@ function resumo(p) {
     itens: (p.itens || []).map(i => ({
       nome: i.nome, preco: Number(i.preco) || 0, quantidade: Number(i.quantidade) || 1,
       observacao: i.observacao || null,
+      // Foto do produto que o cliente escolheu (link ou imagem embutida até
+      // ~300KB, pra lista não pesar).
+      imagem: typeof i.imagem === 'string' && (/^https?:\/\//.test(i.imagem) || (/^data:image\//.test(i.imagem) && i.imagem.length < 300000)) ? i.imagem : null,
       arte: i.arte ? { frente: i.arte.frente?.nome || null, verso: i.arte.verso?.nome || null } : null,
     })),
   };
