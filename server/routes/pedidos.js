@@ -60,9 +60,6 @@ router.put('/:id/status', authMiddleware, adminOnly, async (req, res) => {
 });
 
 router.delete('/:id', authMiddleware, adminOnly, async (req, res) => {
-  // Pedido que já virou venda no ERP não some daqui (ficaria sem rastro).
-  const { rows: [p] } = await pool.query('SELECT enviado_erp FROM pedidos WHERE id = $1', [req.params.id]);
-  if (p?.enviado_erp) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP — não dá pra apagar.' });
   const { rowCount } = await pool.query('DELETE FROM pedidos WHERE id = $1', [req.params.id]);
   if (!rowCount) return res.status(404).json({ error: 'Pedido não encontrado.' });
   res.status(204).end();

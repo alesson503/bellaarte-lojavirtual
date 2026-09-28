@@ -75,10 +75,11 @@ router.post('/pedidos/:id/concluir', wrap(async (req, res) => {
   res.json({ pedido: resumo(pedido) });
 }));
 
-// DELETE /api/erp/pedidos/:id — só pedido que ainda não virou venda.
+// DELETE /api/erp/pedidos/:id — tira o pedido da loja. Se ele já virou
+// venda, a venda (e os afazeres) continuam no ERP; só some daqui.
 router.delete('/pedidos/:id', wrap(async (req, res) => {
-  const { rowCount } = await pool.query('DELETE FROM pedidos WHERE id = $1 AND enviado_erp = false', [req.params.id]);
-  if (!rowCount) return res.status(409).json({ error: 'Pedido não encontrado ou já enviado pro ERP.' });
+  const { rowCount } = await pool.query('DELETE FROM pedidos WHERE id = $1', [req.params.id]);
+  if (!rowCount) return res.status(404).json({ error: 'Pedido não encontrado.' });
   res.status(204).end();
 }));
 
