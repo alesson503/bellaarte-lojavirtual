@@ -32,6 +32,7 @@ export interface MultiProduct {
   // Ficha do produto (material, cores, tamanho…) — hoje só nos grupos de
   // produtos importados do fornecedor.
   especificacoes?: { chave: string; valor: string }[];
+  descricao?: string;
 }
 
 export interface MedidaProduct {

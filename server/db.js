@@ -174,6 +174,7 @@ async function migrate() {
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_grupo TEXT;
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_opcao TEXT;
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_especificacoes JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_descricao TEXT;
   `);
 
   // "Visível na loja" (ativo) é escolha do admin; "saiu do ERP" é outra

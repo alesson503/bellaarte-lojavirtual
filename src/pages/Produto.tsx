@@ -277,7 +277,7 @@ export default function Produto() {
             )}
 
             <div className="mt-6 rounded-2xl bg-cream-100 p-5 text-ink-soft">
-              {produto.tipo === 'simples' && produto.descricao ? (
+              {(produto.tipo === 'simples' || produto.tipo === 'multi') && produto.descricao ? (
                 <p className="whitespace-pre-line">{produto.descricao}</p>
               ) : (
                 <p className="text-ink-muted">Produto personalizado feito com muito carinho. 💗 Fale com a gente pra combinar as artes, cores e detalhes do seu jeitinho!</p>

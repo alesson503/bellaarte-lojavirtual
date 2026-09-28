@@ -46,6 +46,7 @@ export interface LojaProduto {
   erp_grupo?: string | null;
   erp_opcao?: string | null;
   erp_especificacoes?: { chave: string; valor: string }[];
+  erp_descricao?: string | null;
 }
 
 export async function listLojaProducts(): Promise<LojaProduto[]> {

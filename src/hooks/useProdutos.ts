@@ -218,6 +218,7 @@ function agruparImportados(produtos: SimpleProduct[]): { grupos: MultiProduct[];
       fotoPorCombo: v => porCombo.get(chave(v))?.imagem,
       erpIdPorCombo: v => porCombo.get(chave(v))?.erpId,
       especificacoes: primeiro.especificacoes,
+      descricao: itens.find(i => i.descricao)?.descricao,
     });
   }
   return { grupos, restantes };
@@ -243,7 +244,8 @@ export function useProdutos() {
           imagem: p.imagem_url ?? undefined,
           precoOriginal: p.desconto_percentual > 0 ? p.preco_original : undefined,
           descontoPercentual: p.desconto_percentual > 0 ? p.desconto_percentual : undefined,
-          descricao: p.descricao ?? undefined,
+          // Descrição escrita na loja vale mais que a que veio do fornecedor.
+          descricao: p.descricao || p.erp_descricao || undefined,
           cores: p.cores?.length ? p.cores : undefined,
           // Especificação escrita na loja vale mais que a que veio do fornecedor.
           especificacoes: p.especificacoes?.length ? p.especificacoes : p.erp_especificacoes?.length ? p.erp_especificacoes : undefined,

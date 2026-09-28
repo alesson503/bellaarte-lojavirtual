@@ -25,12 +25,13 @@ async function syncProdutosFromErp() {
   for (const p of simples) {
     vistosErpIds.push(p.erp_id ?? p.id);
     await pool.query(
-      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, imagem_origem, erp_grupo, erp_opcao, erp_especificacoes)
-       VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END, $7, $8, $9::jsonb)
+      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, imagem_origem, erp_grupo, erp_opcao, erp_especificacoes, erp_descricao)
+       VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END, $7, $8, $9::jsonb, $10)
        ON CONFLICT (erp_id) DO UPDATE SET
          nome = EXCLUDED.nome, categoria = EXCLUDED.categoria, preco = EXCLUDED.preco,
          unidade = EXCLUDED.unidade, fora_do_erp = false, atualizado_em = now(),
          erp_grupo = EXCLUDED.erp_grupo, erp_opcao = EXCLUDED.erp_opcao, erp_especificacoes = EXCLUDED.erp_especificacoes,
+         erp_descricao = EXCLUDED.erp_descricao,
          imagem_url = CASE WHEN produtos.imagem_origem = 'manual' THEN produtos.imagem_url ELSE EXCLUDED.imagem_url END,
          imagem_origem = CASE
            WHEN produtos.imagem_origem = 'manual' THEN 'manual'
@@ -38,7 +39,8 @@ async function syncProdutosFromErp() {
            ELSE 'nenhuma'
          END`,
       [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : p.unidade_venda === 'ml' ? 'm' : null, p.id, p.foto_url || null,
-       p.loja_grupo || null, p.loja_opcao || null, JSON.stringify(Array.isArray(p.loja_especificacoes) ? p.loja_especificacoes : [])]
+       p.loja_grupo || null, p.loja_opcao || null, JSON.stringify(Array.isArray(p.loja_especificacoes) ? p.loja_especificacoes : []),
+       p.loja_descricao || null]
     );
   }
   if (vistosErpIds.length) {
