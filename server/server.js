@@ -46,6 +46,7 @@ app.use('/api/catalogo-fixo', require('./routes/catalogoFixo'));
 app.use('/api/pedidos', require('./routes/pedidos'));
 app.use('/api/configuracoes', require('./routes/configuracoes'));
 app.use('/api/promocoes', require('./routes/promocoes'));
+app.use('/api/erp', require('./routes/erp')); // painel Loja Virtual dentro do ERP
 
 app.use((err, _req, res, _next) => {
   if (err?.message === 'Origem não permitida por CORS.') {

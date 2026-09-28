@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { itensSemArte, reservar, liberar, concluir, avisarErpPedidoNovo } = require('../pedidosErp');
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ router.post('/', criarLimiter, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [clienteId || null, String(nome).trim(), String(telefone).trim(), entrega || 'Retirar na Bella Arte', JSON.stringify(itens), Number(total) || 0]
     );
+    avisarErpPedidoNovo(rows[0]);
     res.status(201).json({ pedido: rows[0] });
   } catch (e) {
     console.error(e);
@@ -58,6 +60,9 @@ router.put('/:id/status', authMiddleware, adminOnly, async (req, res) => {
 });
 
 router.delete('/:id', authMiddleware, adminOnly, async (req, res) => {
+  // Pedido que já virou venda no ERP não some daqui (ficaria sem rastro).
+  const { rows: [p] } = await pool.query('SELECT enviado_erp FROM pedidos WHERE id = $1', [req.params.id]);
+  if (p?.enviado_erp) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP — não dá pra apagar.' });
   const { rowCount } = await pool.query('DELETE FROM pedidos WHERE id = $1', [req.params.id]);
   if (!rowCount) return res.status(404).json({ error: 'Pedido não encontrado.' });
   res.status(204).end();
@@ -70,22 +75,13 @@ router.post('/:id/enviar-erp', authMiddleware, adminOnly, async (req, res) => {
     return res.status(503).json({ error: 'Integração com o ERP ainda não foi configurada.' });
   }
 
-  const { rows } = await pool.query('SELECT * FROM pedidos WHERE id = $1', [req.params.id]);
-  const pedido = rows[0];
-  if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado.' });
-  if (pedido.enviado_erp) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP.' });
+  const { rows } = await pool.query('SELECT enviado_erp FROM pedidos WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Pedido não encontrado.' });
+  const pedido = await reservar(req.params.id);
+  if (!pedido) return res.status(409).json({ error: 'Esse pedido já foi enviado pro ERP.' });
 
   try {
-    // O ERP não precisa (e não deveria) receber o arquivo de arte em base64 —
-    // só um aviso em texto de que tem arte anexada (o arquivo em si fica só
-    // no painel da loja, pra não sobrecarregar o sistema do ERP à toa).
-    const itensParaErp = (pedido.itens || []).map(item => {
-      if (!item?.arte?.frente && !item?.arte?.verso) return item;
-      const { arte, ...resto } = item;
-      const nomes = [arte.frente && `frente: ${arte.frente.nome}`, arte.verso && `verso: ${arte.verso.nome}`].filter(Boolean).join(', ');
-      const notaArte = `Arte anexada (${nomes}) — baixar no painel da loja`;
-      return { ...resto, observacao: [resto.observacao, notaArte].filter(Boolean).join(' | ') };
-    });
+    const itensParaErp = itensSemArte(pedido.itens);
 
     const erpRes = await fetch(`${process.env.ERP_API_URL}/api/pedidos-site`, {
       method: 'POST',
@@ -101,12 +97,9 @@ router.post('/:id/enviar-erp', authMiddleware, adminOnly, async (req, res) => {
     const erpData = await erpRes.json().catch(() => ({}));
     if (!erpRes.ok) throw new Error(erpData.error || 'O ERP recusou o pedido.');
 
-    const { rows: updated } = await pool.query(
-      'UPDATE pedidos SET enviado_erp = true, erp_numero = $2 WHERE id = $1 RETURNING *',
-      [pedido.id, erpData.numero || null]
-    );
-    res.json({ pedido: updated[0] });
+    res.json({ pedido: await concluir(pedido.id, erpData.numero) });
   } catch (e) {
+    await liberar(pedido.id);
     console.error('Erro ao enviar pedido pro ERP:', e);
     res.status(502).json({ error: e instanceof Error ? e.message : 'Não foi possível falar com o ERP agora.' });
   }
