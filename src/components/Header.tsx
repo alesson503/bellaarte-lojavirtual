@@ -62,10 +62,6 @@ export default function Header({
 
   return (
     <>
-      <div className="truncate whitespace-nowrap bg-ink px-4 py-1.5 text-center text-[11px] text-white sm:text-xs">
-        🚚 Frete combinado direto com você pelo WhatsApp
-        <span className="hidden sm:inline"> &middot; ✂️ Arte revisada antes de imprimir &middot; 💬 Atendimento rápido</span>
-      </div>
       {promocao && (
         <div className="bg-rose px-4 py-2 text-center text-xs font-bold text-white">
           🎉 {promocao.nome} — {promocao.percentual}% OFF em toda a loja
