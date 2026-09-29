@@ -46,19 +46,14 @@
   --font-caveat: "Caveat", cursive;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink: #F3ECE0; --ink-soft: #D9CDBB; --graphite: #A89987; --graphite-faint: #7A6E5E;
-    --paper: #1B1712; --card: #262019; --line: #3A3225;
-    --violet: #EA88AB; --violet-deep: #F2A9C2; --violet-ink: #1B1712; --violet-soft: color-mix(in srgb, var(--violet) 18%, var(--card));
-    --blush: #332C22; --blush-line: #3A3225; --blush-deep: #F2A9C2;
-    --amber: #FCD34D; --amber-bg: #3A2E12;
-    --corte: oklch(70% 0.12 45); --corte-bg: oklch(24% 0.04 40);
-    --seguranca: oklch(75% 0.1 165); --seguranca-bg: oklch(22% 0.04 165);
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 26px -14px rgba(0,0,0,0.5);
-    --shadow-lift: 0 22px 46px -20px rgba(0,0,0,0.6);
-  }
-}
+/* O modo escuro automático (que seguia o celular/computador à noite) foi
+   desligado de propósito: o redesign novo (cartões em polaroid, cores
+   rosa/creme) tem muita caixa com fundo branco fixo — no escuro, o texto
+   trocava pra claro e ficava ilegível (texto quase branco em fundo branco).
+   Refazer isso direito pra cada tela é trabalho grande; por ora a loja
+   sempre mostra o visual claro, decisão confirmada com o dono. A regra
+   [data-theme="dark"] abaixo fica só pra uma futura ativação manual, se um
+   dia alguém quiser ligar escuro de propósito num botão — hoje nada aciona. */
 :root[data-theme="dark"] {
   --ink: #F3ECE0; --ink-soft: #D9CDBB; --graphite: #A89987; --graphite-faint: #7A6E5E;
   --paper: #1B1712; --card: #262019; --line: #3A3225;
