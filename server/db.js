@@ -192,6 +192,10 @@ async function migrate() {
     -- pros campos da loja (uma vez só): daí pra frente o texto é do admin,
     -- pode editar ou apagar e a sincronização não escreve por cima.
     ALTER TABLE produtos ADD COLUMN IF NOT EXISTS info_erp_copiada BOOLEAN NOT NULL DEFAULT false;
+    -- Cores com foto vindas do fornecedor (Única Brasil, Sublime). Mesma
+    -- regra: copiadas pra "cores" uma vez só; depois o admin mexe à vontade.
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS erp_cores JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS cores_erp_copiadas BOOLEAN NOT NULL DEFAULT false;
   `);
 
   // "Visível na loja" (ativo) é escolha do admin; "saiu do ERP" é outra

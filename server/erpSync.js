@@ -25,13 +25,13 @@ async function syncProdutosFromErp() {
   for (const p of simples) {
     vistosErpIds.push(p.erp_id ?? p.id);
     await pool.query(
-      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, imagem_origem, erp_grupo, erp_opcao, erp_especificacoes, erp_descricao)
-       VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END, $7, $8, $9::jsonb, $10)
+      `INSERT INTO produtos (nome, categoria, preco, unidade, ativo, origem, erp_id, imagem_url, imagem_origem, erp_grupo, erp_opcao, erp_especificacoes, erp_descricao, erp_cores)
+       VALUES ($1, $2, $3, $4, true, 'erp', $5, $6, CASE WHEN $6::text IS NOT NULL THEN 'erp' ELSE 'nenhuma' END, $7, $8, $9::jsonb, $10, $11::jsonb)
        ON CONFLICT (erp_id) DO UPDATE SET
          nome = EXCLUDED.nome, categoria = EXCLUDED.categoria, preco = EXCLUDED.preco,
          unidade = EXCLUDED.unidade, fora_do_erp = false, atualizado_em = now(),
          erp_grupo = EXCLUDED.erp_grupo, erp_opcao = EXCLUDED.erp_opcao, erp_especificacoes = EXCLUDED.erp_especificacoes,
-         erp_descricao = EXCLUDED.erp_descricao,
+         erp_descricao = EXCLUDED.erp_descricao, erp_cores = EXCLUDED.erp_cores,
          imagem_url = CASE WHEN produtos.imagem_origem = 'manual' THEN produtos.imagem_url ELSE EXCLUDED.imagem_url END,
          imagem_origem = CASE
            WHEN produtos.imagem_origem = 'manual' THEN 'manual'
@@ -40,7 +40,7 @@ async function syncProdutosFromErp() {
          END`,
       [p.nome, p.categoria, Number(p.preco), p.unidade_venda === 'm2' ? 'm²' : p.unidade_venda === 'ml' ? 'm' : null, p.id, p.foto_url || null,
        p.loja_grupo || null, p.loja_opcao || null, JSON.stringify(Array.isArray(p.loja_especificacoes) ? p.loja_especificacoes : []),
-       p.loja_descricao || null]
+       p.loja_descricao || null, JSON.stringify(Array.isArray(p.loja_cores) ? p.loja_cores : [])]
     );
   }
   if (vistosErpIds.length) {
@@ -64,6 +64,15 @@ async function syncProdutosFromErp() {
        info_erp_copiada = true, atualizado_em = now()
      WHERE origem = 'erp' AND info_erp_copiada = false
        AND (COALESCE(erp_descricao, '') <> '' OR erp_especificacoes <> '[]'::jsonb)`
+  );
+
+  // Cores com foto do fornecedor → seletor de cor do produto, uma vez só
+  // (se o admin já tinha cadastrado cores, ficam as dele).
+  await pool.query(
+    `UPDATE produtos SET
+       cores = CASE WHEN cores = '[]'::jsonb THEN erp_cores ELSE cores END,
+       cores_erp_copiadas = true, atualizado_em = now()
+     WHERE origem = 'erp' AND cores_erp_copiadas = false AND erp_cores <> '[]'::jsonb`
   );
 
   // 2) Preço do configurador de Adesivo — casa por nome exato.
