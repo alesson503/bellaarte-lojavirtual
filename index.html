@@ -1,9 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- O site é em português mas antes estava marcado lang="en" — o navegador
+         achava que precisava traduzir, mexia no texto por fora do React e às
+         vezes travava a página no meio de uma troca de conteúdo (erro
+         "removeChild"). notranslate + lang certo evita isso na raiz. -->
+    <meta name="google" content="notranslate" />
     <title>bellaarte-lojavirtual</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,7 +24,7 @@
       gtag('config', 'G-M740DD3M7B');
     </script>
   </head>
-  <body>
+  <body class="notranslate">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
