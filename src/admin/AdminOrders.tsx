@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listOrders, deleteOrder, sendToErp, type Order } from '../services/ordersService';
+import { listOrders, deleteOrder, sendToErp, updateOrderStatus, type Order } from '../services/ordersService';
+import { STATUS_PEDIDO, statusLabel } from '../statusPedido';
 import { fmt } from '../data';
 
 export default function AdminOrders() {
@@ -42,6 +43,19 @@ export default function AdminOrders() {
     }
   }
 
+  // "Recebemos"/"Em produção" já mudam sozinhos (pedido feito / enviado pro
+  // ERP). "Pronto"/"Entregue" ainda são manuais aqui — no futuro, quando a
+  // loja conseguir perguntar pro ERP o status da venda, isso também vira
+  // automático.
+  async function mudarStatus(id: string, status: string) {
+    try {
+      const atualizado = await updateOrderStatus(id, status);
+      setOrders(prev => prev?.map(o => (o.id === id ? atualizado : o)) ?? null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Não foi possível mudar o status.');
+    }
+  }
+
   return (
     <div className="adm-panel">
       <h2>Pedidos</h2>
@@ -56,7 +70,7 @@ export default function AdminOrders() {
         <div className="adm-table-wrap">
         <table className="adm-table">
           <thead>
-            <tr><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Total</th><th>Data</th><th>ERP</th><th></th></tr>
+            <tr><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Total</th><th>Data</th><th>Status</th><th>ERP</th><th></th></tr>
           </thead>
           <tbody>
             {orders.map(o => (
@@ -87,6 +101,15 @@ export default function AdminOrders() {
                 <td>{o.entrega}</td>
                 <td>{fmt(o.total)}</td>
                 <td>{new Date(o.criado_em).toLocaleString('pt-BR')}</td>
+                <td>
+                  <select
+                    value={o.status}
+                    onChange={e => mudarStatus(o.id, e.target.value)}
+                    style={{ fontSize: 12.5, padding: '5px 7px', borderRadius: 8, border: '1.5px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', fontWeight: 600 }}
+                  >
+                    {STATUS_PEDIDO.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                  </select>
+                </td>
                 <td>
                   {o.enviado_erp ? (
                     <span style={{ color: 'var(--violet-deep)', fontWeight: 700, fontSize: 12.5 }}>✓ {o.erp_numero}</span>

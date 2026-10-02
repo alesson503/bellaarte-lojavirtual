@@ -110,6 +110,9 @@ export default function Header({
             {user?.role === 'admin' && (
               <Link className="hidden rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" to="/admin" title="Voltar pro painel administrativo">⚙️ Admin</Link>
             )}
+            {user && user.role !== 'admin' && (
+              <Link className="hidden rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" to="/meus-pedidos" title="Ver meus pedidos">📦 Meus Pedidos</Link>
+            )}
             {user ? (
               <button className="hidden items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2 text-sm font-semibold text-ink sm:inline-flex" title={`Sair da conta de ${user.nome}`} onClick={() => { logout(); toast('Você saiu da sua conta.'); }}>
                 <UserIcon /> {user.nome.split(' ')[0]} · Sair
@@ -145,6 +148,7 @@ export default function Header({
             <a className={`py-2.5 ${linkCls(page === 'sobre')}`} onClick={irParaSobre}>Sobre Nós</a>
             <a className={`py-2.5 ${linkCls(page === 'contato')}`} onClick={irParaContato}>Contato</a>
             {user?.role === 'admin' && <Link className="py-2.5 font-semibold text-ink-soft" to="/admin">⚙️ Painel admin</Link>}
+            {user && user.role !== 'admin' && <Link className="py-2.5 font-semibold text-ink-soft" to="/meus-pedidos" onClick={() => setMobileNavOpen(false)}>📦 Meus Pedidos</Link>}
             {user ? (
               <a className="py-2.5 font-semibold text-ink-soft" onClick={() => { logout(); toast('Você saiu da sua conta.'); setMobileNavOpen(false); }}>Sair da conta</a>
             ) : (

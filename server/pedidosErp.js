@@ -33,8 +33,11 @@ async function liberar(id) {
 }
 
 async function concluir(id, erpNumero) {
+  // Puxar pro ERP é exatamente o momento que o cliente vê como "Em
+  // produção" (ver statusPedido no front-end) — atualiza sozinho aqui,
+  // sem precisar o admin mexer em mais nada.
   const { rows } = await pool.query(
-    'UPDATE pedidos SET enviado_erp = true, erp_numero = $2 WHERE id = $1 RETURNING *',
+    "UPDATE pedidos SET enviado_erp = true, erp_numero = $2, status = 'em_producao' WHERE id = $1 RETURNING *",
     [id, erpNumero || null]
   );
   return rows[0] || null;

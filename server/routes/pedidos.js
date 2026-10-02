@@ -48,6 +48,17 @@ router.get('/', authMiddleware, adminOnly, async (req, res) => {
   res.json({ pedidos: rows });
 });
 
+// GET /api/pedidos/meus — qualquer conta logada vê só os próprios pedidos
+// (os que ela fez logada, por isso têm cliente_id preenchido). Tem que vir
+// antes de '/:id' pra não ser lido como um id.
+router.get('/meus', authMiddleware, async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM pedidos WHERE cliente_id = $1 ORDER BY criado_em DESC',
+    [req.user.id]
+  );
+  res.json({ pedidos: rows });
+});
+
 router.put('/:id/status', authMiddleware, adminOnly, async (req, res) => {
   const { status } = req.body || {};
   if (!status?.trim()) return res.status(400).json({ error: 'Status é obrigatório.' });

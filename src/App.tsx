@@ -4,6 +4,7 @@ import StoreLayout from './components/StoreLayout';
 import Vitrine from './pages/Vitrine';
 import Produto from './pages/Produto';
 import Carrinho from './pages/Carrinho';
+import MeusPedidos from './pages/MeusPedidos';
 import AdminLogin from './admin/AdminLogin';
 import AdminLayout from './admin/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/produtos" element={<Vitrine />} />
         <Route path="/produto/:id" element={<Produto />} />
         <Route path="/carrinho" element={<Carrinho />} />
+        <Route path="/meus-pedidos" element={<MeusPedidos />} />
       </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminLayout />}>

@@ -46,6 +46,24 @@ export async function listOrders(): Promise<Order[]> {
   return json.pedidos;
 }
 
+// Só os pedidos da conta logada (os que ela fez logada) — usado na tela
+// "Meus Pedidos" do cliente.
+export async function listMyOrders(): Promise<Order[]> {
+  const res = await fetch(`${API_URL}/api/pedidos/meus`, { headers: authHeader() });
+  const json = await parseOrThrow(res);
+  return json.pedidos;
+}
+
+export async function updateOrderStatus(id: string, status: string): Promise<Order> {
+  const res = await fetch(`${API_URL}/api/pedidos/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ status }),
+  });
+  const json = await parseOrThrow(res);
+  return json.pedido;
+}
+
 export async function deleteOrder(id: string): Promise<void> {
   const res = await fetch(`${API_URL}/api/pedidos/${id}`, { method: 'DELETE', headers: authHeader() });
   if (!res.ok && res.status !== 204) {
