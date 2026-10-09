@@ -30,9 +30,14 @@ export default function Vitrine() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   function setFiltro(cat: string) {
+    // Clicar numa categoria é uma escolha nova — limpa a busca, senão os
+    // dois filtros somam (categoria E busca) e passa a não achar nada,
+    // mesmo com produto de sobra na categoria escolhida.
+    setBusca('');
     const next = new URLSearchParams(searchParams);
     if (cat === 'Todos') next.delete('categoria');
     else next.set('categoria', cat);
+    next.delete('busca');
     setSearchParams(next);
   }
 
