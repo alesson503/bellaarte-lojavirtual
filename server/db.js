@@ -98,6 +98,12 @@ async function migrate() {
       criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    -- "Esqueci minha senha": guarda só o HASH do token (o token de verdade
+    -- vai no link do e-mail, nunca no banco) e quando ele expira. Token novo
+    -- substitui o antigo; usado uma vez só (reset_token volta a NULL depois).
+    ALTER TABLE clientes ADD COLUMN IF NOT EXISTS reset_token_hash TEXT;
+    ALTER TABLE clientes ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ;
+
     CREATE TABLE IF NOT EXISTS pedidos (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       cliente_id  UUID REFERENCES clientes(id) ON DELETE SET NULL,

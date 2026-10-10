@@ -90,3 +90,23 @@ export async function trocarSenha(senhaAtual: string, senhaNova: string): Promis
   });
   await parseOrThrow(res);
 }
+
+// "Esqueci minha senha" — sempre "funciona" (mesma mensagem), mesmo se o
+// e-mail não existir na loja, de propósito (não entrega essa informação).
+export async function esqueciSenha(email: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/auth/esqueci-senha`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  await parseOrThrow(res);
+}
+
+export async function redefinirSenha(token: string, senhaNova: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/auth/redefinir-senha`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, senhaNova }),
+  });
+  await parseOrThrow(res);
+}
